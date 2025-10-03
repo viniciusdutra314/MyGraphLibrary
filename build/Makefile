@@ -117,48 +117,48 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named floyd_wharsall_cli
+# Target rules for targets named main_cli
 
 # Build rule for target.
-floyd_wharsall_cli: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 floyd_wharsall_cli
-.PHONY : floyd_wharsall_cli
+main_cli: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main_cli
+.PHONY : main_cli
 
 # fast build rule for target.
-floyd_wharsall_cli/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/floyd_wharsall_cli.dir/build.make CMakeFiles/floyd_wharsall_cli.dir/build
-.PHONY : floyd_wharsall_cli/fast
+main_cli/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/build
+.PHONY : main_cli/fast
 
-src/floyd_warshall_cli.o: src/floyd_warshall_cli.c.o
-.PHONY : src/floyd_warshall_cli.o
+src/data_structures.o: src/data_structures.c.o
+.PHONY : src/data_structures.o
 
 # target to build an object file
-src/floyd_warshall_cli.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/floyd_wharsall_cli.dir/build.make CMakeFiles/floyd_wharsall_cli.dir/src/floyd_warshall_cli.c.o
-.PHONY : src/floyd_warshall_cli.c.o
+src/data_structures.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/data_structures.c.o
+.PHONY : src/data_structures.c.o
 
-src/floyd_warshall_cli.i: src/floyd_warshall_cli.c.i
-.PHONY : src/floyd_warshall_cli.i
+src/data_structures.i: src/data_structures.c.i
+.PHONY : src/data_structures.i
 
 # target to preprocess a source file
-src/floyd_warshall_cli.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/floyd_wharsall_cli.dir/build.make CMakeFiles/floyd_wharsall_cli.dir/src/floyd_warshall_cli.c.i
-.PHONY : src/floyd_warshall_cli.c.i
+src/data_structures.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/data_structures.c.i
+.PHONY : src/data_structures.c.i
 
-src/floyd_warshall_cli.s: src/floyd_warshall_cli.c.s
-.PHONY : src/floyd_warshall_cli.s
+src/data_structures.s: src/data_structures.c.s
+.PHONY : src/data_structures.s
 
 # target to generate assembly for a file
-src/floyd_warshall_cli.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/floyd_wharsall_cli.dir/build.make CMakeFiles/floyd_wharsall_cli.dir/src/floyd_warshall_cli.c.s
-.PHONY : src/floyd_warshall_cli.c.s
+src/data_structures.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/data_structures.c.s
+.PHONY : src/data_structures.c.s
 
 src/graph_library.o: src/graph_library.c.o
 .PHONY : src/graph_library.o
 
 # target to build an object file
 src/graph_library.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/floyd_wharsall_cli.dir/build.make CMakeFiles/floyd_wharsall_cli.dir/src/graph_library.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/graph_library.c.o
 .PHONY : src/graph_library.c.o
 
 src/graph_library.i: src/graph_library.c.i
@@ -166,7 +166,7 @@ src/graph_library.i: src/graph_library.c.i
 
 # target to preprocess a source file
 src/graph_library.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/floyd_wharsall_cli.dir/build.make CMakeFiles/floyd_wharsall_cli.dir/src/graph_library.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/graph_library.c.i
 .PHONY : src/graph_library.c.i
 
 src/graph_library.s: src/graph_library.c.s
@@ -174,8 +174,32 @@ src/graph_library.s: src/graph_library.c.s
 
 # target to generate assembly for a file
 src/graph_library.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/floyd_wharsall_cli.dir/build.make CMakeFiles/floyd_wharsall_cli.dir/src/graph_library.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/graph_library.c.s
 .PHONY : src/graph_library.c.s
+
+src/main.o: src/main.c.o
+.PHONY : src/main.o
+
+# target to build an object file
+src/main.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/main.c.o
+.PHONY : src/main.c.o
+
+src/main.i: src/main.c.i
+.PHONY : src/main.i
+
+# target to preprocess a source file
+src/main.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/main.c.i
+.PHONY : src/main.c.i
+
+src/main.s: src/main.c.s
+.PHONY : src/main.s
+
+# target to generate assembly for a file
+src/main.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_cli.dir/build.make CMakeFiles/main_cli.dir/src/main.c.s
+.PHONY : src/main.c.s
 
 # Help Target
 help:
@@ -185,13 +209,16 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... floyd_wharsall_cli"
-	@echo "... src/floyd_warshall_cli.o"
-	@echo "... src/floyd_warshall_cli.i"
-	@echo "... src/floyd_warshall_cli.s"
+	@echo "... main_cli"
+	@echo "... src/data_structures.o"
+	@echo "... src/data_structures.i"
+	@echo "... src/data_structures.s"
 	@echo "... src/graph_library.o"
 	@echo "... src/graph_library.i"
 	@echo "... src/graph_library.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
 .PHONY : help
 
 

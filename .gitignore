@@ -1,6 +1,8 @@
 #graph files
 *.net
 *.eff
+/build
+/builtree
 
 # Prerequisites
 *.d
