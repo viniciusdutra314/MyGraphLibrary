@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG CMakeFiles/floyd_wharsall_cli.dir/src/floyd_warshall_cli.c.o CMakeFiles/floyd_wharsall_cli.dir/src/graph_library.c.o -o floyd_wharsall_cli

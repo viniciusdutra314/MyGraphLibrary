@@ -1,3 +1,7 @@
+#graph files
+*.net
+*.eff
+
 # Prerequisites
 *.d
 

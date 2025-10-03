@@ -3,36 +3,42 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include "graph_library.h"
 
-typedef struct
-{
-    size_t from;
-    size_t to;
-    double weight;
-} Edge;
-
-typedef struct
-{
-    size_t V;
-    size_t E;
-    Edge *edge_list;
-} Graph;
-
-typedef struct {
-    size_t N;
-    double* mem_buffer; 
-} DistanceMatrix;
-
+/**
+ * @brief Retrieves the value at a specific row and column in the distance matrix.
+ * @param matrix A pointer to the DistanceMatrix.
+ * @param i The row index.
+ * @param j The column index.
+ * @return The value at matrix[i][j].
+ */
 double get(DistanceMatrix const* matrix,size_t i,size_t j){
     return matrix->mem_buffer[matrix->N*i+j];
 }
 
-
+/**
+ * @brief Sets the value at a specific row and column in the distance matrix.
+ * @param matrix A pointer to the DistanceMatrix.
+ * @param i The row index.
+ * @param j The column index.
+ * @param value The value to set at matrix[i][j].
+ */
 void set(DistanceMatrix const* matrix,size_t i,size_t j,double value){
     matrix->mem_buffer[matrix->N*i+j]=value;
 }
 
-
+/**
+ * @brief Reads a graph from a file in edge list format.
+ * The file format is expected to be:
+ * V (number of vertices)
+ * E (number of edges)
+ * from_1 to_1 weight_1
+ * from_2 to_2 weight_2
+ * ...
+ * @param graph A pointer to the Graph structure to be filled.
+ * @param filename The name of the file to read from.
+ * @return 0 on success, 1 on failure.
+ */
 int read_edgelist(Graph *graph, char const *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -87,13 +93,27 @@ clean_up:
     fclose(file);
     return 1;
 }
+/**
+ * @brief Frees the memory allocated for the graph's edge list.
+ * @param graph A pointer to the Graph to be destroyed.
+ */
 void graph_destroy(Graph* graph){
     free(graph->edge_list);
 }
+/**
+ * @brief Frees the memory allocated for the distance matrix's buffer.
+ * @param distance_matrix A pointer to the DistanceMatrix to be destroyed.
+ */
 void matrix_destroy(DistanceMatrix* distance_matrix){
     free(distance_matrix->mem_buffer);
 }
 
+/**
+ * @brief Computes all-pairs shortest paths using the Floyd-Warshall algorithm.
+ * @param graph A pointer to the input Graph.
+ * @param distances A pointer to the DistanceMatrix to store the results.
+ * @return 0 on success, 1 on failure.
+ */
 int floyd_warshall(Graph const* graph,DistanceMatrix* distances){
     size_t const V=graph->V;
     size_t const E=graph->E;
@@ -130,6 +150,12 @@ clean_up:
     return 1;
 }
 
+/**
+ * @brief Calculates the global efficiency of the graph.
+ * The efficiency is the average of the inverse of the shortest path distances between all pairs of vertices.
+ * @param distances A pointer to the DistanceMatrix containing the shortest path distances.
+ * @return The global efficiency of the graph.
+ */
 double calculate_efficiency(DistanceMatrix const* distances){
     double efficiency=0;
     size_t const N=distances->N;
@@ -143,15 +169,3 @@ double calculate_efficiency(DistanceMatrix const* distances){
     return efficiency;
 }
 
-
-int main()
-{   
-    Graph graph;
-    read_edgelist(&graph,"../tests/floyd_warshall/test1.net");
-    DistanceMatrix distances;
-    floyd_warshall(&graph,&distances);
-    printf("%lf \n",calculate_efficiency(&distances));
-    graph_destroy(&graph);
-    matrix_destroy(&distances);
-
-}
