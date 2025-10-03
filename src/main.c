@@ -1,61 +1,157 @@
 #include <stdint.h>
-#include <stddef.h>  
+#include <stddef.h>
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 
-typedef struct {
+typedef struct
+{
     size_t from;
     size_t to;
+    double weight;
 } Edge;
 
-typedef double weight;
+typedef struct
+{
+    size_t V;
+    size_t E;
+    Edge *edge_list;
+} Graph;
 
-int order_edges(const void *edge_a, const void *edge_b) {
-    const Edge *first  = (const Edge*) edge_a;
-    const Edge *second = (const Edge*) edge_b;
+typedef struct {
+    size_t N;
+    double* mem_buffer; 
+} DistanceMatrix;
 
-    int cmp = (first->from > second->from) - (first->from < second->from);
-    if (cmp != 0) {
-        return cmp;
-    }
-    return (first->to > second->to) - (first->to < second->to);
+double get(DistanceMatrix const* matrix,size_t i,size_t j){
+    return matrix->mem_buffer[matrix->N*i+j];
 }
 
-int main(){
-    FILE* file=fopen("../tests/floyd_warshall/test1.net","r");
-    if (file==NULL){
-        fprintf(stderr,"O arquivo não conseguiu ser aberto\n");
-        return 1;   
+
+void set(DistanceMatrix const* matrix,size_t i,size_t j,double value){
+    matrix->mem_buffer[matrix->N*i+j]=value;
+}
+
+
+int read_edgelist(Graph *graph, char const *filename)
+{
+    FILE *file = fopen(filename, "r");
+    Edge *edge_list = NULL;
+    if (file == NULL)
+    {
+        fprintf(stderr, "O arquivo não conseguiu ser aberto\n");
+        goto clean_up;
     }
-    int V,E;
-    fscanf(file,"%d",&V);
-    fscanf(file,"%d",&E);
-    Edge* edge_list=malloc(E*sizeof(Edge));
-    weight* weight_array=malloc(E*sizeof(weight));
-    uint32_t num_line=0;
-    while (!feof(file) && num_line!=E){
-        Edge* current_edge=&edge_list[num_line];
-        weight* current_weight=&weight_array[num_line];
-        int characters_read=fscanf(file," %d %d %lf ",
-                                &current_edge->from,
-                                &current_edge->to,
-                             current_weight);
-        if (characters_read!=3){
-            fprintf(stderr,"Linha %d com formatação inválida");
-            return 1;
-        }                    
+    size_t V, E;
+    if (fscanf(file, "%zu", &V) != 1)
+    {
+        fprintf(stderr, "Não foi possível ler o número de vérticies");
+        goto clean_up;
+    };
+    if (fscanf(file, "%zu", &E) != 1)
+    {
+        fprintf(stderr, "Não foi possível ler o número de edges");
+        goto clean_up;
+    };
+    edge_list = malloc(E * sizeof(Edge));
+    if (edge_list == NULL)
+    {
+        fprintf(stderr, "Alocação da edgelist não foi bem sucessida");
+        goto clean_up;
+    }
+    size_t num_line = 0;
+    while (!feof(file) && num_line != E)
+    {
+        Edge *current_edge = &edge_list[num_line];
+        if (fscanf(file, " %zu %zu %lf ",
+                   &current_edge->from,
+                   &current_edge->to,
+                   &current_edge->weight) != 3)
+        {
+            fprintf(stderr, "Linha %zu com formatação inválida",num_line);
+            goto clean_up;
+        }
         num_line++;
     };
-    if (num_line!=E){
-        fprintf(stderr,"Número de edges incompatível com o arquivo fornecido\n");
-        return 1;
-    }
-    for (int i=0;i<E;i++){
-        printf("%d %d %f \n",edge_list[i].from,
-        edge_list[i].to,
-        weight_array[i]);
-    }
-    free(weight_array);
+    if (num_line != E)
+    {
+        fprintf(stderr, "Número de edges incompatível com o arquivo fornecido\n");
+        goto clean_up;
+    };
+    graph->V=V;
+    graph->E=E;
+    graph->edge_list=edge_list;
+    return 0;
+clean_up:
     free(edge_list);
     fclose(file);
+    return 1;
+}
+void graph_destroy(Graph* graph){
+    free(graph->edge_list);
+}
+void matrix_destroy(DistanceMatrix* distance_matrix){
+    free(distance_matrix->mem_buffer);
+}
+
+int floyd_warshall(Graph const* graph,DistanceMatrix* distances){
+    size_t const V=graph->V;
+    size_t const E=graph->E;
+    distances->N=V;
+    distances->mem_buffer=malloc(V*V*sizeof(double));
+    if (distances->mem_buffer==NULL){
+        fprintf(stderr,"Alocação da matriz de distância falhou");
+        goto clean_up;
+    };
+    for (size_t i=0;i<V;i++){
+        for (size_t j=0;j<V;j++){
+            set(distances,i,j,i!=j ? INFINITY : 0);
+        }
+    }
+
+    for (size_t edge_index=0;edge_index<E;edge_index++){
+        Edge const edge=graph->edge_list[edge_index];
+        set(distances,edge.from,edge.to,edge.weight);
+    };
+
+    for (size_t k=0;k<V;k++){
+        for (size_t j=0;j<V;j++){
+            for (size_t i=0;i<V;i++){
+                if (get(distances,i,j)>get(distances,i,k)+get(distances,k,j)){
+                    double const new_value=get(distances,i,k)+get(distances,k,j);
+                    set(distances,i,j,new_value);
+                }
+            }
+        }
+    }
+    return 0;
+clean_up:
+    free(distances->mem_buffer);
+    return 1;
+}
+
+double calculate_efficiency(DistanceMatrix const* distances){
+    double efficiency=0;
+    size_t const N=distances->N;
+    for (size_t i=0;i<N;i++){
+        for (size_t j=0;j<N;j++){
+            if (i!=j){
+                efficiency+=(1.0/get(distances,i,j))/(N*(N-1));
+            }
+        }
+    };
+    return efficiency;
+}
+
+
+int main()
+{   
+    Graph graph;
+    read_edgelist(&graph,"../tests/floyd_warshall/test1.net");
+    DistanceMatrix distances;
+    floyd_warshall(&graph,&distances);
+    printf("%lf \n",calculate_efficiency(&distances));
+    graph_destroy(&graph);
+    matrix_destroy(&distances);
+
 }
