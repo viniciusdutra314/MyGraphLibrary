@@ -2,6 +2,7 @@
 #include <time.h>
 #include "data_structures.h"
 #include "graph_library.h"
+#include <string.h>
 
 int main(int argc,char** argv){
     Graph graph;
@@ -21,9 +22,19 @@ int main(int argc,char** argv){
         fprintf(stderr, "Erro na execuação do algoritmo de Floyd-Warshall \n");
         return 1;
     }
-    printf("A eficiência é de %.17g \n",calculate_efficiency(&distances));
+    double const efficiency=calculate_efficiency(&distances);
+    printf("A eficiência é de %.17g \n",efficiency);
     clock_t end_time=clock();
     printf("O tempo de execução foi de %lf s \n",((double) (end_time - start_time)) / CLOCKS_PER_SEC);
     graph_destroy(&graph);
     square_matrix_double_free(&distances);
+
+    char* output_file_name=malloc(strlen(argv[1])+strlen(".eff")+1);
+    strcpy(output_file_name,argv[1]);
+    strcat(output_file_name,".eff");
+    FILE* output_file=fopen(output_file_name,"w");
+    fprintf(output_file,"%.17g",efficiency);
+    fclose(output_file);
+    free(output_file_name);
+
 }

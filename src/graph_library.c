@@ -102,11 +102,11 @@ int floyd_warshall(Graph const* graph,SquareMatrix_double *distances){
     };
 
     for (size_t k=0;k<V;k++){
-        for (size_t j=0;j<V;j++){
-            for (size_t i=0;i<V;i++){
-                double const d_ij=square_matrix_double_get(distances,i,j);
-                double const d_ik=square_matrix_double_get(distances,i,k);
+        for (size_t i=0;i<V;i++){
+            double const d_ik=square_matrix_double_get(distances,i,k);
+            for (size_t j=0;j<V;j++){
                 double const d_kj=square_matrix_double_get(distances,k,j);
+                double const d_ij=square_matrix_double_get(distances,i,j);
                 if (d_ij>d_ik+d_kj){
                     square_matrix_double_set(distances,i,j,d_ik+d_kj);
                 }
@@ -145,10 +145,11 @@ double calculate_efficiency(SquareMatrix_double const* distances){
     for (size_t i=0;i<N;i++){
         for (size_t j=0;j<N;j++){
             if (i!=j){
-                efficiency+=(1.0/square_matrix_double_get(distances,i,j))/(N*(N-1));
+                efficiency+=(1.0/square_matrix_double_get(distances,i,j));
             }
         }
     };
+    efficiency=efficiency/(N*(N-1));
     return efficiency;
 }
 
