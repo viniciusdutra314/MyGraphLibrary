@@ -15,7 +15,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-O3 -march=native)
 endif()
 
-add_executable(main_cli src/main.c src/graph_library.c src/data_structures.c)
+add_executable(main_cli src/main.c src/graph_library.c)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_options(main_cli PRIVATE -fsanitize=address -fsanitize=undefined)
 endif()

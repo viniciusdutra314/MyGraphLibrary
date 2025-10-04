@@ -1,35 +1,111 @@
 #pragma once
 #include <stddef.h>
-/**
- * @brief Represents a square matrix of doubles, used to store distances between vertices.
- * @param N The dimension of the square matrix (N x N).
- * @param mem_buffer A pointer to the memory buffer storing the matrix elements in row-major order.
- */
-typedef struct {
-    size_t N;
-    double* mem_buffer; 
-} DistanceMatrix;
 
-/**
- * @brief Retrieves the value at a specific row and column in the distance matrix.
- * @param matrix A pointer to the DistanceMatrix.
- * @param i The row index.
- * @param j The column index.
- * @return The value at matrix[i][j].
- */
-double get(DistanceMatrix const* matrix,size_t i,size_t j);
-/**
- * @brief Sets the value at a specific row and column in the distance matrix.
- * @param matrix A pointer to the DistanceMatrix.
- * @param i The row index.
- * @param j The column index.
- * @param value The value to set at matrix[i][j].
- */
-void set(DistanceMatrix const* matrix,size_t i,size_t j,double value);
-/**
- * @brief Frees the memory allocated for the distance matrix's buffer.
- * @param distance_matrix A pointer to the DistanceMatrix to be destroyed.
- */
+#define DECLARE_VECTOR_INTERFACE(T) \
+typedef struct \
+{ \
+    size_t capacity; \
+    size_t size;    \
+    T* data;        \
+} Vector_##T; \
+void vector_##T##_init(Vector_##T* vector); \
+int vector_##T##_reserve(Vector_##T* vector, size_t capacity); \
+void vector_##T##_push_back(Vector_##T* vector, T element); \
+T vector_##T##_get(Vector_##T const* vector, size_t index); \
+void vector_##T##_set(Vector_##T* vector, size_t index, T value); \
+void vector_##T##_free(Vector_##T* vector);\
+
+#define IMPLEMENT_VECTOR_INTERFACE(T) \
+\
+void vector_##T##_init(Vector_##T* vector) \
+{ \
+    vector->capacity = 0; \
+    vector->size = 0; \
+    vector->data = NULL; \
+} \
+\
+int vector_##T##_reserve(Vector_##T* vector, size_t capacity) \
+{ \
+    if (capacity > vector->capacity) \
+    { \
+        T* new_data = (T*)realloc(vector->data, capacity * sizeof(T)); \
+        if (new_data == NULL) { \
+            fprintf(stderr, "Realocação de memória falhou em uma operação de reserve de um vetor \n"); \
+            return 1; \
+        } \
+        vector->data = new_data; \
+        vector->capacity = capacity; \
+    } \
+    return 0; \
+} \
+\
+void vector_##T##_push_back(Vector_##T* vector, T element) \
+{ \
+    if (vector->size >= vector->capacity) \
+    { \
+        size_t new_capacity = vector->capacity == 0 ? 1 : vector->capacity * 2; \
+        vector_##T##_reserve(vector, new_capacity); \
+    } \
+    vector->data[vector->size++] = element; \
+} \
+\
+T vector_##T##_get(Vector_##T const* vector, size_t index) \
+{ \
+    return vector->data[index]; \
+} \
+\
+void vector_##T##_set(Vector_##T* vector, size_t index, T value) \
+{ \
+    vector->data[index] = value; \
+} \
+\
+void vector_##T##_free(Vector_##T* vector) \
+{ \
+    free(vector->data); \
+    vector->data = NULL; \
+    vector->capacity = 0; \
+    vector->size = 0; \
+}
 
 
-void matrix_destroy(DistanceMatrix* distance_matrix);
+#define DECLARE_SQUARE_MATRIX_INTERFACE(T) \
+typedef struct { \
+    size_t N; \
+    Vector_##T inner_vector; \
+} SquareMatrix_##T; \
+int square_matrix_##T##_init(SquareMatrix_##T *matrix, size_t N); \
+T square_matrix_##T##_get(SquareMatrix_##T const* matrix, size_t i, size_t j); \
+void square_matrix_##T##_set(SquareMatrix_##T* matrix, size_t i, size_t j, T value); \
+void square_matrix_##T##_free(SquareMatrix_##T* matrix);
+
+#define IMPLEMENT_SQUARE_MATRIX_INTERFACE(T) \
+int square_matrix_##T##_init(SquareMatrix_##T *matrix, size_t N){ \
+   matrix->N=N; \
+   Vector_##T inner_vector; \
+   vector_##T##_init(&inner_vector); \
+   if (vector_##T##_reserve(&inner_vector,N*N)!=0){\
+     fprintf(stderr,"Alocação dinâmica da matriz falhou"); \
+     return 1; \
+   } ;\
+   matrix->inner_vector=inner_vector; \
+   return 0; \
+} \
+T square_matrix_##T##_get(SquareMatrix_##T const* matrix, size_t i, size_t j) {\
+    return vector_##T##_get(&matrix->inner_vector,i*matrix->N+j); \
+} \
+void square_matrix_##T##_set(SquareMatrix_##T* matrix, size_t i, size_t j, T value){ \
+    vector_##T##_set(&matrix->inner_vector,i*matrix->N+j,value); \
+} \
+void square_matrix_##T##_free(SquareMatrix_##T* matrix){\
+    vector_##T##_free(&matrix->inner_vector); \
+}
+
+
+typedef struct{
+    int dummy;
+} PriorityQueue;
+
+void priority_queue_add(PriorityQueue* priority_queue,size_t vertex_id,double priority);
+size_t priority_queue_get();
+void priority_queue_update(size_t vertex_id,double priority);
+int priority_queue_is_empty(PriorityQueue const* priority_queue);
