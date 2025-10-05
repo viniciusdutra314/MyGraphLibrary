@@ -1,3 +1,13 @@
+ /** 
+ * As macros neste arquivo permitem a criação de tipos de vetores dinâmicos e matrizes quadradas
+ * para qualquer tipo de dado. Isso é alcançado através da geração de código em tempo de pré-processamento,
+ * simulando templates de C++
+ *
+ * - `DECLARE_VECTOR_INTERFACE(T)`: Declara a struct e as assinaturas das funções para um vetor do tipo T.
+ * - `IMPLEMENT_VECTOR_INTERFACE(T)`: Fornece a implementação concreta das funções do vetor para o tipo T.
+ * - `DECLARE_SQUARE_MATRIX_INTERFACE(T)`: Declara a struct e as assinaturas das funções para uma matriz quadrada do tipo T.
+ * - `IMPLEMENT_SQUARE_MATRIX_INTERFACE(T)`: Fornece a implementação concreta das funções da matriz para o tipo T.
+ */
 #pragma once
 #include <stddef.h>
 
@@ -100,12 +110,3 @@ void square_matrix_##T##_free(SquareMatrix_##T* matrix){\
     vector_##T##_free(&matrix->inner_vector); \
 }
 
-
-typedef struct{
-    int dummy;
-} PriorityQueue;
-
-void priority_queue_add(PriorityQueue* priority_queue,size_t vertex_id,double priority);
-size_t priority_queue_get();
-void priority_queue_update(size_t vertex_id,double priority);
-int priority_queue_is_empty(PriorityQueue const* priority_queue);

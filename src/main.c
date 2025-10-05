@@ -17,15 +17,17 @@ int main(int argc,char** argv){
         fprintf(stderr, "Erro lendo o arquivo edgelist \n");
         return 1;
     }
-    clock_t start_time=clock();
+    struct timespec start_time;
+    timespec_get(&start_time,TIME_UTC);
     if (floyd_warshall(&graph,&distances) != 0) {
         fprintf(stderr, "Erro na execuação do algoritmo de Floyd-Warshall \n");
         return 1;
     }
     double const efficiency=calculate_efficiency(&distances);
-    printf("A eficiência é de %.17g \n",efficiency);
-    clock_t end_time=clock();
-    printf("O tempo de execução foi de %lf s \n",((double) (end_time - start_time)) / CLOCKS_PER_SEC);
+    printf("A eficiência é de %.8f \n",efficiency);
+    struct timespec end_time;
+    timespec_get(&end_time,TIME_UTC );
+    printf("O tempo de execução foi de %.8f s \n",(end_time.tv_sec-start_time.tv_sec)+(end_time.tv_nsec -start_time.tv_nsec) / 1e9);
     graph_destroy(&graph);
     square_matrix_double_free(&distances);
 
@@ -33,7 +35,7 @@ int main(int argc,char** argv){
     strcpy(output_file_name,argv[1]);
     strcat(output_file_name,".eff");
     FILE* output_file=fopen(output_file_name,"w");
-    fprintf(output_file,"%.17g",efficiency);
+    fprintf(output_file,"%.8f",efficiency);
     fclose(output_file);
     free(output_file_name);
 

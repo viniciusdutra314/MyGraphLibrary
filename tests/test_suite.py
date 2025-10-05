@@ -9,7 +9,7 @@ import subprocess
 def create_nx_graph_from_file(filepath):
     with open(filepath, 'r') as f:
         num_vertices = int(f.readline().strip())
-        f.readline()
+        num_edges=f.readline()
         G = nx.DiGraph()
         for line in f:
             if line.strip():
@@ -36,8 +36,7 @@ def compare_my_code_with_networkx(c_binary_dir:Path,graph_tests_files:list[Path]
         my_code_time=time()-my_code_time_start
         with open(str(graph_file)+".eff", 'r') as f:
             efficiency_my_code = float(f.read().strip())
-        if not np.isclose(efficiency_networkx, efficiency_my_code, rtol=1e-4):
-            breakpoint()
+        assert np.isclose(efficiency_networkx, efficiency_my_code, rtol=1e-8)
         print(f"{graph_file.name} \t | networkx {int(networkx_time*1e3):E}ms \t | my_code {int(my_code_time*1e3):E}ms \t | speedup {networkx_time/my_code_time:.2f}x ")
 
 def main():
