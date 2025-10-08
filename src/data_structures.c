@@ -1,89 +1,96 @@
 #include "data_structures.h"
+#include <graph_library.h>
 
-IMPLEMENT_VECTOR_INTERFACE(VertexDistance, VecVertexDistance);
+IMPLEMENT_VECTOR_INTERFACE(VertexWithPriority, VecVertexWithPriority)
+IMPLEMENT_VECTOR_INTERFACE(size_t, VecSizeT)
 
-
-__left(uint64_t index)
+size_t __left(size_t index)
 {
     return 2 * index + 1;
-};
-__right(uint64_t index)
+}
+size_t  __right(size_t index)
 {
     return 2 * index + 2;
-};
-__parent(uint64_t index)
+}
+size_t  __parent(size_t index)
 {
     return (index - 1) / 2;
-};
-int __is_valid(uint64_t index, MinHeap const *heap)
+}
+int __is_valid(size_t index, MinHeap const *heap)
 {
-    uint64_t heap_size = VecVertexDistance_size(&heap->data);
+    size_t heap_size = VecVertexWithPriority_size(&heap->data);
     return index < heap_size;
-};
+}
 
-__exchange(uint64_t i, uint64_t j, MinHeap *heap)
+void __exchange(size_t i, size_t j, MinHeap *heap)
 {
-    VertexDistance temp = VecVertexDistance_get(&heap->data, i);
-    VecVertexDistance_set(&heap->data, i, VecVertexDistance_get(&heap->data, j));
-    VecVertexDistance_set(&heap->data, j, temp);
-};
+    VertexWithPriority temp = VecVertexWithPriority_get(&heap->data, i);
+    VecVertexWithPriority_set(&heap->data, i, VecVertexWithPriority_get(&heap->data, j));
+    VecVertexWithPriority_set(&heap->data, j, temp);
+}
 
-
-
-void __max_heapify(uint64_t index, MinHeap *heap)
+void __min_heapify(size_t index, MinHeap *heap)
 {
-    uint64_t left = __left(index);
-    uint64_t right = __right(index);
-    uint64_t largest = index;
-    if (__is_valid(left, heap) && VecVertexDistance_get(&heap->data, left).distance > VecVertexDistance_get(&heap->data, largest).distance)
+    size_t left = __left(index);
+    size_t right = __right(index);
+    size_t smallest = index;
+    if (__is_valid(left, heap) && VecVertexWithPriority_get(&heap->data, left).distance < VecVertexWithPriority_get(&heap->data, smallest).distance)
     {
-        largest = left;
+        smallest = left;
     }
-    if (__is_valid(right, heap) && VecVertexDistance_get(&heap->data, right).distance > VecVertexDistance_get(&heap->data, largest).distance)
+    if (__is_valid(right, heap) && VecVertexWithPriority_get(&heap->data, right).distance < VecVertexWithPriority_get(&heap->data, smallest).distance)
     {
-        largest = right;
+        smallest = right;
     }
-    if (largest != index)
+    if (smallest != index)
     {
-        __exchange(index, largest, heap);
-        __max_heapify(largest, heap);
+        __exchange(index, smallest, heap);
+        __min_heapify(smallest, heap);
     }
-};
-
-
+}
 
 void MinHeap_init(MinHeap *heap)
 {
-    VecVertexDistance_init(&heap->data);
-};
+    VecVertexWithPriority_init(&heap->data);
+    VecSizeT_init(&heap->index_map);
+}
 void MinHeap_free(MinHeap *heap)
 {
-    VecVertexDistance_free(&heap->data);
-};
-void MinHeap_is_empty(MinHeap const *heap)
+    VecVertexWithPriority_free(&heap->data);
+}
+int MinHeap_is_empty(MinHeap const *heap)
 {
-    return VecVertexDistance_is_empty(&heap->data);
-};
+    return VecVertexWithPriority_is_empty(&heap->data);
+}
 
-void MinHeap_add(MinHeap *heap, uint64_t vertex_id,double distance)
+void MinHeap_add(MinHeap *heap, size_t vertex_id, double distance)
 {
-    VertexDistance element={vertex_id, distance};
-    VecVertexDistance_push_back(&heap->data, element);
-    uint64_t index = VecVertexDistance_size(&heap->data) - 1;
-    while (index > 0 && VecVertexDistance_get(&heap->data, __parent(index)).distance < VecVertexDistance_get(&heap->data, index).distance)
+    VertexWithPriority element = {vertex_id, distance};
+    VecVertexWithPriority_push_back(&heap->data, element);
+    size_t index = VecVertexWithPriority_size(&heap->data) - 1;
+    while (index > 0 && VecVertexWithPriority_get(&heap->data, __parent(index)).distance > VecVertexWithPriority_get(&heap->data, index).distance)
     {
         __exchange(index, __parent(index), heap);
         index = __parent(index);
     }
-};
+}
 
-
-uint64_t MinHeap_get(MinHeap* heap)
+size_t MinHeap_get(MinHeap *heap)
 {
-    VertexDistance max_element = VecVertexDistance_get(&heap->data, 0);
-    uint64_t last_index = VecVertexDistance_size(&heap->data) - 1;
-    VecVertexDistance_set(&heap->data, 0, VecVertexDistance_get(&heap->data, last_index));
-    vector_VertexDistance_pop_back(&heap->data);
-    __max_heapify(0, heap);
-    return max_element.vertex_id;
-};
+    VertexWithPriority min_element = VecVertexWithPriority_get(&heap->data, 0);
+    size_t last_index = VecVertexWithPriority_size(&heap->data) - 1;
+    VecVertexWithPriority_set(&heap->data, 0, VecVertexWithPriority_get(&heap->data, last_index));
+    VecVertexWithPriority_pop_back(&heap->data);
+    __min_heapify(0, heap);
+    return min_element.vertex_id;
+}
+void MinHeap_decrease_key(MinHeap *heap, size_t vertex_id, double new_distance)
+{
+    size_t index = VecSizeT_get(&heap->index_map, vertex_id);
+    VecVertexWithPriority_set(&heap->data, index, (VertexWithPriority){vertex_id, new_distance});
+    while (index > 0 && VecVertexWithPriority_get(&heap->data, index).distance < VecVertexWithPriority_get(&heap->data, __parent(index)).distance)
+    {
+        __exchange(index, __parent(index), heap);
+        index = __parent(index);
+    }
+}

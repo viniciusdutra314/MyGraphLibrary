@@ -9,6 +9,15 @@
         "string_view": "c",
         "span": "c",
         "format": "c",
-        "initializer_list": "c"
+        "initializer_list": "c",
+        "variant": "c",
+        "stdlib.h": "c",
+        "math.h": "c",
+        "charconv": "c",
+        "optional": "c",
+        "system_error": "c",
+        "functional": "c",
+        "tuple": "c",
+        "utility": "c"
     }
 }
