@@ -1,146 +1,181 @@
- /** 
- * As macros neste arquivo permitem a criação de tipos de vetores dinâmicos e matrizes quadradas
- * para qualquer tipo de dado. Isso é alcançado através da geração de código em tempo de pré-processamento,
- * simulando templates de C++
- *
- * - `DECLARE_VECTOR_INTERFACE(T)`: Declara a struct e as assinaturas das funções para um vetor do tipo T.
- * - `IMPLEMENT_VECTOR_INTERFACE(T)`: Fornece a implementação concreta das funções do vetor para o tipo T.
- * - `DECLARE_SQUARE_MATRIX_INTERFACE(T)`: Declara a struct e as assinaturas das funções para uma matriz quadrada do tipo T.
- * - `IMPLEMENT_SQUARE_MATRIX_INTERFACE(T)`: Fornece a implementação concreta das funções da matriz para o tipo T.
- */
 #pragma once
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
-#define DECLARE_VECTOR_INTERFACE(T) \
-typedef struct \
-{ \
-    size_t capacity; \
-    size_t size;    \
-    T* data;        \
-} Vector_##T; \
-void vector_##T##_init(Vector_##T* vector); \
-int vector_##T##_reserve(Vector_##T* vector, size_t capacity); \
-void vector_##T##_push_back(Vector_##T* vector, T element); \
-T vector_##T##_get(Vector_##T const* vector, size_t index); \
-void vector_##T##_set(Vector_##T* vector, size_t index, T value); \
-void vector_##T##_free(Vector_##T* vector);\
+#define DECLARE_VECTOR_INTERFACE(T, name)                   \
+    typedef struct                                          \
+    {                                                       \
+        uint64_t capacity;                                  \
+        uint64_t size;                                      \
+        T *data;                                            \
+    } name;                                                 \
+    void name##_init(name *vector);                         \
+    int name##_is_empty(name const *vector);                \
+    uint64_t name##_size(name const *vector);               \
+    int name##_reserve(name *vector, uint64_t capacity);    \
+    void name##_push_back(name *vector, T element);         \
+    void name##_pop_back(name *vector);                     \
+    T name##_get(name const *vector, size_t index);         \
+    void name##_set(name *vector, uint64_t index, T value); \
+    void name##_free(name *vector);
 
-#define __IMPLEMENT_VECTOR_CORE_INTERFACE(T) \
-\
-void vector_##T##_init(Vector_##T* vector) \
-{ \
-    vector->capacity = 0; \
-    vector->size = 0; \
-    vector->data = NULL; \
-} \
-\
-int vector_##T##_reserve(Vector_##T* vector, size_t capacity) \
-{ \
-    if (capacity > vector->capacity) \
-    { \
-        T* new_data = (T*)realloc(vector->data, capacity * sizeof(T)); \
-        if (new_data == NULL) { \
-            fprintf(stderr, "Realocação de memória falhou em uma operação de reserve de um vetor \n"); \
-            return 1; \
-        } \
-        vector->data = new_data; \
-        vector->capacity = capacity; \
-    } \
-    return 0; \
-} \
-\
-void vector_##T##_push_back(Vector_##T* vector, T element) \
-{ \
-    if (vector->size >= vector->capacity) \
-    { \
-        size_t new_capacity = vector->capacity == 0 ? 1 : vector->capacity * 2; \
-        vector_##T##_reserve(vector, new_capacity); \
-    } \
-    vector->data[vector->size++] = element; \
-} \
-\
-T vector_##T##_get(Vector_##T const* vector, size_t index) \
-{ \
-    return vector->data[index]; \
-} \
-\
+#define DECLARE_SQUARE_MATRIX_INTERFACE(T, name)                      \
+    typedef struct                                                    \
+    {                                                                 \
+        uint64_t size;                                                \
+        T *data;                                                      \
+    } name;                                                           \
+    int name##_init(name *matrix, uint64_t size);                     \
+    T name##_get(name const *matrix, size_t row, size_t col);         \
+    void name##_set(name *matrix, uint64_t row, size_t col, T value); \
+    void name##_free(name *matrix);
 
+#define __IMPLEMENT_VECTOR_CORE_INTERFACE(T, name)                                                         \
+                                                                                                           \
+    void name##_init(name *vector)                                                                         \
+    {                                                                                                      \
+        vector->capacity = 0;                                                                              \
+        vector->size = 0;                                                                                  \
+        vector->data = NULL;                                                                               \
+    }                                                                                                      \
+    uint64_t name##_size(name const *vector)                                                               \
+    {                                                                                                      \
+        return vector->size;                                                                               \
+    }                                                                                                      \
+    int name##_is_empty(name const *vector)                                                                \
+    {                                                                                                      \
+        return vector->size == 0;                                                                          \
+    }                                                                                                      \
+    int name##_reserve(name *vector, uint64_t capacity)                                                    \
+    {                                                                                                      \
+        if (capacity > vector->capacity)                                                                   \
+        {                                                                                                  \
+            T *new_data = (T *)realloc(vector->data, capacity * sizeof(T));                                \
+            if (new_data == NULL)                                                                          \
+            {                                                                                              \
+                fprintf(stderr, "Realocação de memória falhou em uma operação de reserve de um vetor \n"); \
+                return 1;                                                                                  \
+            }                                                                                              \
+            vector->data = new_data;                                                                       \
+            vector->capacity = capacity;                                                                   \
+        }                                                                                                  \
+        return 0;                                                                                          \
+    }                                                                                                      \
+                                                                                                           \
+    void name##_push_back(name *vector, T element)                                                         \
+    {                                                                                                      \
+        if (vector->size >= vector->capacity)                                                              \
+        {                                                                                                  \
+            uint64_t new_capacity = vector->capacity == 0 ? 1 : vector->capacity * 2;                      \
+            name##_reserve(vector, new_capacity);                                                          \
+        }                                                                                                  \
+        vector->data[vector->size++] = element;                                                            \
+    }                                                                                                      \
+                                                                                                           \
+    T name##_get(name const *vector, size_t index)                                                         \
+    {                                                                                                      \
+        return vector->data[index];                                                                        \
+    }
 
-#define __IMPLEMENT_VECTOR_INTERFACE_NO_DELETER(T) \
-void vector_##T##_set(Vector_##T* vector, size_t index, T value) \
-{ \
-    vector->data[index] = value; \
-} \
-\
-void vector_##T##_free(Vector_##T* vector) \
-{ \
-    free(vector->data); \
-    vector->data = NULL; \
-    vector->capacity = 0; \
-    vector->size = 0; \
-}
+#define __IMPLEMENT_VECTOR_INTERFACE_NO_DELETER(T, name)   \
+    void name##_set(name *vector, uint64_t index, T value) \
+    {                                                      \
+        vector->data[index] = value;                       \
+    }                                                      \
+    void name##_pop_back(name *vector)                     \
+    {                                                      \
+        if (vector->size > 0)                              \
+        {                                                  \
+            vector->size--;                                \
+        }                                                  \
+    }                                                      \
+    void name##_free(name *vector)                         \
+    {                                                      \
+        free(vector->data);                                \
+        vector->data = NULL;                               \
+        vector->capacity = 0;                              \
+        vector->size = 0;                                  \
+    }
 
-#define __IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, DELETER) \
-void vector_##T##_set(Vector_##T* vector, size_t index, T value) \
-{ \
-    DELETER(&vector->data[index]); \
-    vector->data[index] = value; \
-} \
-\
-void vector_##T##_free(Vector_##T* vector) \
-{ \
-    for (size_t i = 0; i < vector->size; ++i) \
-    { \
-        DELETER(&vector->data[i]); \
-    } \
-    free(vector->data); \
-    vector->data = NULL; \
-    vector->capacity = 0; \
-    vector->size = 0; \
-}
+#define __IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, name, DELETER) \
+    void name##_set(name *vector, uint64_t index, T value)          \
+    {                                                               \
+        DELETER(&vector->data[index]);                              \
+        vector->data[index] = value;                                \
+    }                                                               \
+    void name##_pop_back(name *vector)                              \
+    {                                                               \
+        if (vector->size > 0)                                       \
+        {                                                           \
+            DELETER(&vector->data[vector->size - 1]);               \
+            vector->size--;                                         \
+        }                                                           \
+    }                                                               \
+    void name##_free(name *vector)                                  \
+    {                                                               \
+        for (uint64_t i = 0; i < vector->size; ++i)                 \
+        {                                                           \
+            DELETER(&vector->data[i]);                              \
+        }                                                           \
+        free(vector->data);                                         \
+        vector->data = NULL;                                        \
+        vector->capacity = 0;                                       \
+        vector->size = 0;                                           \
+    }
 
-#define IMPLEMENT_VECTOR_INTERFACE(T) \
-__IMPLEMENT_VECTOR_CORE_INTERFACE(T) \
-__IMPLEMENT_VECTOR_INTERFACE_NO_DELETER(T) \
+#define IMPLEMENT_VECTOR_INTERFACE(T, name)    \
+    __IMPLEMENT_VECTOR_CORE_INTERFACE(T, name) \
+    __IMPLEMENT_VECTOR_INTERFACE_NO_DELETER(T, name)
 
-#define IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, DELETER) \
-__IMPLEMENT_VECTOR_CORE_INTERFACE(T) \
-__IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, DELETER) 
+#define IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, name, DELETER) \
+    __IMPLEMENT_VECTOR_CORE_INTERFACE(T, name)                    \
+    __IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, name, DELETER)
 
+#define IMPLEMENT_SQUARE_MATRIX_INTERFACE(T, name)                           \
+    int name##_init(name *matrix, uint64_t size)                             \
+    {                                                                        \
+        matrix->size = size;                                                 \
+        matrix->data = (T *)malloc(size * size * sizeof(T));                 \
+        if (matrix->data == NULL)                                            \
+        {                                                                    \
+            fprintf(stderr, "Falha na alocação de memória para a matriz\n"); \
+            matrix->size = 0;                                                \
+            return 1;                                                        \
+        }                                                                    \
+        return 0;                                                            \
+    }                                                                        \
+    T name##_get(name const *matrix, size_t row, size_t col)                 \
+    {                                                                        \
+        return matrix->data[row * matrix->size + col];                       \
+    }                                                                        \
+    void name##_set(name *matrix, uint64_t row, size_t col, T value)         \
+    {                                                                        \
+        matrix->data[row * matrix->size + col] = value;                      \
+    }                                                                        \
+    void name##_free(name *matrix)                                           \
+    {                                                                        \
+        free(matrix->data);                                                  \
+        matrix->data = NULL;                                                 \
+        matrix->size = 0;                                                    \
+    }
 
+typedef struct
+{
+    uint64_t vertex_id;
+    double distance;
+} VertexDistance;
 
+DECLARE_VECTOR_INTERFACE(VertexDistance, VecVertexDistance)
 
-#define DECLARE_SQUARE_MATRIX_INTERFACE(T) \
-typedef struct { \
-    size_t N; \
-    Vector_##T inner_vector; \
-} SquareMatrix_##T; \
-int square_matrix_##T##_init(SquareMatrix_##T *matrix, size_t N); \
-T square_matrix_##T##_get(SquareMatrix_##T const* matrix, size_t i, size_t j); \
-void square_matrix_##T##_set(SquareMatrix_##T* matrix, size_t i, size_t j, T value); \
-void square_matrix_##T##_free(SquareMatrix_##T* matrix);
+typedef struct
+{
+    VecVertexDistance data;
+} MinHeap;
 
-#define IMPLEMENT_SQUARE_MATRIX_INTERFACE(T) \
-int square_matrix_##T##_init(SquareMatrix_##T *matrix, size_t N){ \
-   matrix->N=N; \
-   Vector_##T inner_vector; \
-   vector_##T##_init(&inner_vector); \
-   if (vector_##T##_reserve(&inner_vector,N*N)!=0){\
-     fprintf(stderr,"Alocação dinâmica da matriz falhou"); \
-     return 1; \
-   } ;\
-   matrix->inner_vector=inner_vector; \
-   return 0; \
-} \
-T square_matrix_##T##_get(SquareMatrix_##T const* matrix, size_t i, size_t j) {\
-    return vector_##T##_get(&matrix->inner_vector,i*matrix->N+j); \
-} \
-void square_matrix_##T##_set(SquareMatrix_##T* matrix, size_t i, size_t j, T value){ \
-    vector_##T##_set(&matrix->inner_vector,i*matrix->N+j,value); \
-} \
-void square_matrix_##T##_free(SquareMatrix_##T* matrix){\
-    vector_##T##_free(&matrix->inner_vector); \
-}
-
+void MinHeap_init(MinHeap *heap);
+void MinHeap_free(MinHeap *heap);
+int MinHeap_is_empty(MinHeap const *heap);
+void MinHeap_add(MinHeap *heap, uint64_t vertex_id, double distance);
+uint64_t MinHeap_get(MinHeap *heap);

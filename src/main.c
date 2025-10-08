@@ -6,14 +6,14 @@
 
 int main(int argc,char** argv){
     Graph graph;
-    SquareMatrix_double distances;
+    MatrixDouble distances;
     if (argc!=2){
         fprintf(stderr,"Erro: um arquivo de um grafo no formato "
             "de edgelist deve ser fornecido \n");
         return 1;
     }
 
-    if (graph_read_edgelist(&graph,argv[1]) != 0) {
+    if (Graph_read_edgelist(&graph,argv[1]) != 0) {
         fprintf(stderr, "Erro lendo o arquivo edgelist \n");
         return 1;
     }
@@ -28,8 +28,8 @@ int main(int argc,char** argv){
     struct timespec end_time;
     timespec_get(&end_time,TIME_UTC );
     printf("O tempo de execução foi de %.8f s \n",(end_time.tv_sec-start_time.tv_sec)+(end_time.tv_nsec -start_time.tv_nsec) / 1e9);
-    graph_destroy(&graph);
-    square_matrix_double_free(&distances);
+    Graph_destroy(&graph);
+    MatrixDouble_free(&distances);
 
     char* output_file_name=malloc(strlen(argv[1])+strlen(".eff")+1);
     strcpy(output_file_name,argv[1]);
