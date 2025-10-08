@@ -10,6 +10,8 @@
  */
 #pragma once
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define DECLARE_VECTOR_INTERFACE(T) \
 typedef struct \
@@ -25,7 +27,7 @@ T vector_##T##_get(Vector_##T const* vector, size_t index); \
 void vector_##T##_set(Vector_##T* vector, size_t index, T value); \
 void vector_##T##_free(Vector_##T* vector);\
 
-#define IMPLEMENT_VECTOR_INTERFACE(T) \
+#define __IMPLEMENT_VECTOR_CORE_INTERFACE(T) \
 \
 void vector_##T##_init(Vector_##T* vector) \
 { \
@@ -64,6 +66,9 @@ T vector_##T##_get(Vector_##T const* vector, size_t index) \
     return vector->data[index]; \
 } \
 \
+
+
+#define __IMPLEMENT_VECTOR_INTERFACE_NO_DELETER(T) \
 void vector_##T##_set(Vector_##T* vector, size_t index, T value) \
 { \
     vector->data[index] = value; \
@@ -76,6 +81,35 @@ void vector_##T##_free(Vector_##T* vector) \
     vector->capacity = 0; \
     vector->size = 0; \
 }
+
+#define __IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, DELETER) \
+void vector_##T##_set(Vector_##T* vector, size_t index, T value) \
+{ \
+    DELETER(&vector->data[index]); \
+    vector->data[index] = value; \
+} \
+\
+void vector_##T##_free(Vector_##T* vector) \
+{ \
+    for (size_t i = 0; i < vector->size; ++i) \
+    { \
+        DELETER(&vector->data[i]); \
+    } \
+    free(vector->data); \
+    vector->data = NULL; \
+    vector->capacity = 0; \
+    vector->size = 0; \
+}
+
+#define IMPLEMENT_VECTOR_INTERFACE(T) \
+__IMPLEMENT_VECTOR_CORE_INTERFACE(T) \
+__IMPLEMENT_VECTOR_INTERFACE_NO_DELETER(T) \
+
+#define IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, DELETER) \
+__IMPLEMENT_VECTOR_CORE_INTERFACE(T) \
+__IMPLEMENT_VECTOR_INTERFACE_WITH_DELETER(T, DELETER) 
+
+
 
 
 #define DECLARE_SQUARE_MATRIX_INTERFACE(T) \

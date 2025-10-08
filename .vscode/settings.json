@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "type_traits": "c",
-        "graph_library.h": "c"
+        "graph_library.h": "c",
+        "vector": "c",
+        "data_structures.h": "c"
     }
 }
