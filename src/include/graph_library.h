@@ -21,14 +21,21 @@ typedef struct {
 
 DECLARE_VECTOR_INTERFACE(Edge, VecEdge)
 DECLARE_VECTOR_INTERFACE(VertexWithWeight, VecVertexWeight)
-DECLARE_VECTOR_OF_VECTORS_INTERFACE(VecVertexWeight, VecVecVertexWeight)
+DECLARE_SPAN(VertexWithWeight,SpanVertexWeight)
+DECLARE_VECTOR_INTERFACE(SpanVertexWeight,VecSpanVertexWeight)
+typedef struct{
+    VecSpanVertexWeight neighboors;
+    VecVertexWeight flatten_buffer; 
+} AdjList;
+
+void AdjList_init(AdjList* adjlist);
 
 typedef struct
 {
     size_t V;
     size_t E;
     VecEdge edge_list;
-    VecVecVertexWeight adjacency_list;
+    AdjList adjacency_list;
 } Graph;
 
 void Graph_init(Graph* graph);

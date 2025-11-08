@@ -18,7 +18,7 @@ int main(int argc,char** argv){
     Graph_create_adjacency_list(&graph);
     struct timespec start_time;
     timespec_get(&start_time,TIME_UTC);
-
+    double efficiency=0;
     for (size_t source=0;source<graph.V;source++){   
         VecDouble distances;
         VecDouble_init(&distances); 
@@ -26,20 +26,26 @@ int main(int argc,char** argv){
             fprintf(stderr, "Erro na execuação do algoritmo de Dijkstra \n");
             return 1;
         }
+        
+        for (size_t i=0;i<graph.V;i++){
+            efficiency=1.0/(VecDouble_get(&distances,i));
+        }
+
         VecDouble_free(&distances);
     }
-    //printf("A eficiência é de %.8f \n",efficiency);
+    efficiency/=(graph.V*(graph.V-1));
+    printf("A eficiência é de %.8f \n",efficiency);
     struct timespec end_time;
     timespec_get(&end_time,TIME_UTC );
     printf("O tempo de execução foi de %.8f s \n",(end_time.tv_sec-start_time.tv_sec)+(end_time.tv_nsec -start_time.tv_nsec) / 1e9);
     Graph_destroy(&graph);
-/* 
+
     char* output_file_name=malloc(strlen(argv[1])+strlen(".eff")+1);
     strcpy(output_file_name,argv[1]);
     strcat(output_file_name,".eff");
     FILE* output_file=fopen(output_file_name,"w");
     fprintf(output_file,"%.8f",efficiency);
     fclose(output_file);
-    free(output_file_name); */
+    free(output_file_name);
 
 }
