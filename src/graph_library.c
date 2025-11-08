@@ -9,6 +9,7 @@
 IMPLEMENT_VECTOR_INTERFACE(Edge, VecEdge)
 IMPLEMENT_VECTOR_INTERFACE(VertexWithWeight, VecVertexWeight)
 IMPLEMENT_VECTOR_INTERFACE(double, VecDouble)
+IMPLEMENT_VECTOR_INTERFACE(SpanVertexWeight, VecSpanVertexWeight)
 IMPLEMENT_SQUARE_MATRIX_INTERFACE(double, MatrixDouble)
 
 void AdjList_init(AdjList *adjlist)
@@ -104,7 +105,7 @@ int Graph_create_adjacency_list(Graph *graph)
 
     for (size_t i = 0; i < graph->V; i++)
     {
-        SpanVertexWeight empty_element={NULL,0};
+        SpanVertexWeight empty_element = {NULL, 0};
         VecSpanVertexWeight_set(&adjlist.neighboors, i, empty_element);
     }
 
@@ -117,7 +118,7 @@ int Graph_create_adjacency_list(Graph *graph)
         Edge current_edge = VecEdge_get(&graph->edge_list, i);
         if (current_vertex != current_edge.from)
         {
-            SpanVertexWeight span={.begin=begin_ptr,.N=num_elements};
+            SpanVertexWeight span = {.begin = begin_ptr, .N = num_elements};
             VecSpanVertexWeight_set(&adjlist.neighboors, current_vertex, span);
             begin_ptr += num_elements;
             num_elements = 0;
@@ -127,7 +128,7 @@ int Graph_create_adjacency_list(Graph *graph)
         VertexWithWeight element = {.vertex_id = current_edge.to, .weight = current_edge.weight};
         VecVertexWeight_set(&adjlist.flatten_buffer, i, element);
     }
-    SpanVertexWeight last_span={.begin=begin_ptr,.N=num_elements};
+    SpanVertexWeight last_span = {.begin = begin_ptr, .N = num_elements};
     VecSpanVertexWeight_set(&adjlist.neighboors, current_vertex, last_span);
     graph->adjacency_list = adjlist;
     return 0;
@@ -223,20 +224,23 @@ int dijkstra(Graph const *graph, size_t source, VecDouble *distances)
     while (!MinHeap_is_empty(&heap))
     {
         size_t vertex_id = MinHeap_get(&heap);
-        VecVertexWeight vec = VecVecVertexWeight_get(
-            &graph->adjacency_list, vertex_id);
-        size_t num_neighbors = VecVertexWeight_size(&vec);
         size_t const d_j = VecDouble_get(distances, vertex_id);
-        for (size_t i = 0; i < num_neighbors; i++)
+        SpanVertexWeight span = VecSpanVertexWeight_get(
+            &graph->adjacency_list.neighboors, vertex_id);
+        VertexWithWeight* end=span.begin+span.N;
+        if (span.begin)
         {
-            VertexWithWeight neighbor = VecVertexWeight_get(&vec, i);
-            double const new_distance = d_j + neighbor.weight;
-            if (new_distance < VecDouble_get(distances, neighbor.vertex_id))
+            for (VertexWithWeight *neighbor_ptr = span.begin; neighbor_ptr < end; neighbor_ptr++)
             {
-                VecDouble_set(distances, neighbor.vertex_id, new_distance);
-                MinHeap_decrease_key(&heap, neighbor.vertex_id, new_distance);
+                double const new_distance = d_j + neighbor_ptr->weight;
+                if (new_distance < VecDouble_get(distances, neighbor_ptr->vertex_id))
+                {
+                    VecDouble_set(distances, neighbor_ptr->vertex_id, new_distance);
+                    MinHeap_decrease_key(&heap, neighbor_ptr->vertex_id, new_distance);
+                }
             }
         }
     }
+    MinHeap_free(&heap);
     return 0;
 }

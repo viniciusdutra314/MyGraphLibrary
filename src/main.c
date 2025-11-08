@@ -28,13 +28,16 @@ int main(int argc,char** argv){
         }
         
         for (size_t i=0;i<graph.V;i++){
-            efficiency=1.0/(VecDouble_get(&distances,i));
+            double distance=VecDouble_get(&distances,i);
+            if (distance!=0){
+                efficiency+=1.0/(distance);
+            }
         }
 
         VecDouble_free(&distances);
     }
     efficiency/=(graph.V*(graph.V-1));
-    printf("A eficiência é de %.8f \n",efficiency);
+    printf("Efficiency: %.8f \n",efficiency);
     struct timespec end_time;
     timespec_get(&end_time,TIME_UTC );
     printf("O tempo de execução foi de %.8f s \n",(end_time.tv_sec-start_time.tv_sec)+(end_time.tv_nsec -start_time.tv_nsec) / 1e9);

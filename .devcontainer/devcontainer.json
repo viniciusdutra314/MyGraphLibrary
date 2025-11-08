@@ -8,7 +8,7 @@
 		"ghcr.io/devcontainers-extra/features/apt-packages:1": {
 			"clean_ppas": true,
 			"preserve_apt_list": true,
-			"packages": "btop,htop,valgrind,cloc",
+			"packages": "btop,htop,valgrind,cloc,span",
 			"ppas": "ppa:deadsnakes/ppa"
 		},
 		"ghcr.io/devcontainers-extra/features/cmake:1": {
