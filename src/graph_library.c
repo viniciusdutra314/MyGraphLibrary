@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "graph_library.h"
+
 #include "data_structures.h"
 
 IMPLEMENT_VECTOR_INTERFACE(Edge, VecEdge)
