@@ -33,7 +33,7 @@ def compare_my_code_with_igraph(c_binary_dir: Path, graph_tests_files: list[Path
     csv_path = "performance_comparison_igraph.csv"
     with open(csv_path, "w") as f:
         f.write("graph_file,igraph_time_s,my_code_time_s,speedup,efficiency\n")
-    with ProcessPoolExecutor(8) as executor:
+    with ProcessPoolExecutor(6) as executor:
         worker_func = partial(process_single_graph, c_binary_dir=c_binary_dir)
         futures = {executor.submit(worker_func, graph_file): graph_file for graph_file in graph_tests_files}
         try:
