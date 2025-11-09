@@ -15,7 +15,7 @@ int main(int argc,char** argv){
         return 1;
     }
     Graph graph;
-    if (Graph_read_edgelist(&graph,argv[1]) != 0) {
+    if (Graph_create_edgelist(&graph,argv[1]) != 0) {
         fprintf(stderr, "Erro lendo o arquivo edgelist \n");
         return 1;
     }
@@ -23,11 +23,13 @@ int main(int argc,char** argv){
     struct timespec start_time;
     timespec_get(&start_time,TIME_UTC);
     double efficiency=0;
+    //Um truque de implementação importante é reutilizar o vetor de distâncias
+    //para cada execução do Dijkstra, evitando assim alocações repetidas
     VecDouble distances;
     VecDouble_init(&distances); 
     for (size_t source=0;source<graph.V;source++){   
         if (dijkstra(&graph,source,&distances) != 0) {
-            fprintf(stderr, "Erro na execuação do algoritmo de Dijkstra \n");
+            fprintf(stderr, "Erro na execução do algoritmo de Dijkstra \n");
             return 1;
         }
         for (size_t target=0;target<graph.V;target++){
@@ -68,7 +70,7 @@ int main(int argc,char** argv){
         timespec_get(&ig_end_time, TIME_UTC);
 
         if((fabs(ig_efficiency - efficiency)/ig_efficiency) > 1e-6) {
-            fprintf(stderr, "Erro: A eficiência calculada pelo igraph (%.8f) difere da eficiência calculada pelo nosso código (%.8f)\n", ig_efficiency, efficiency);
+            fprintf(stderr, "Erro: A eficiência calculada pelo igraph (%.8f) difere da eficiência calculada pelo meu código (%.8f)\n", ig_efficiency, efficiency);
             return 1;
         }
 

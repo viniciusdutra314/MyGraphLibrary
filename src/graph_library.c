@@ -24,7 +24,7 @@ void AdjList_free(AdjList *adjlist)
     VecVertexWeight_free(&adjlist->flatten_buffer);
 }
 
-int Graph_read_edgelist(Graph *graph, char const *filename)
+int Graph_create_edgelist(Graph *graph, char const *filename)
 {
     FILE *file = fopen(filename, "r");
     VecEdge edge_list;
@@ -111,25 +111,25 @@ int Graph_create_adjacency_list(Graph *graph)
     }
 
     size_t current_vertex = VecEdge_get(&graph->edge_list, 0).from;
-    VertexWithWeight *begin_ptr = adjlist.flatten_buffer.data;
-    size_t num_elements = 0;
+    VertexWithWeight *data_ptr = adjlist.flatten_buffer.data;
+    size_t num_neighbors = 0;
 
     for (size_t i = 0; i < graph->E; i++)
     {
         Edge current_edge = VecEdge_get(&graph->edge_list, i);
         if (current_vertex != current_edge.from)
         {
-            SpanVertexWeight span = {.begin = begin_ptr, .N = num_elements};
+            SpanVertexWeight span = {.begin = data_ptr, .N = num_neighbors};
             VecSpanVertexWeight_set(&adjlist.neighboors, current_vertex, span);
-            begin_ptr += num_elements;
-            num_elements = 0;
+            data_ptr += num_neighbors;
+            num_neighbors = 0;
             current_vertex = current_edge.from;
         }
-        num_elements++;
+        num_neighbors++;
         VertexWithWeight element = {.vertex_id = current_edge.to, .weight = current_edge.weight};
         VecVertexWeight_set(&adjlist.flatten_buffer, i, element);
     }
-    SpanVertexWeight last_span = {.begin = begin_ptr, .N = num_elements};
+    SpanVertexWeight last_span = {.begin = data_ptr, .N = num_neighbors};
     VecSpanVertexWeight_set(&adjlist.neighboors, current_vertex, last_span);
     graph->adjacency_list = adjlist;
     return 0;
@@ -222,31 +222,29 @@ int dijkstra(Graph const *graph, size_t source, VecDouble *distances)
     MinHeap_init(&heap);
     for (size_t i = 0; i < V; i++)
     {
-        MinHeap_add(&heap, i, i != source ? INFINITY : 0);
-        VecDouble_push_back(distances, i != source ? INFINITY : 0);
+        double const distance = i != source ? INFINITY : 0;
+        MinHeap_add(&heap, i, distance);
+        VecDouble_push_back(distances, distance);
     };
 
     while (!MinHeap_is_empty(&heap))
     {
         size_t vertex_id = MinHeap_get(&heap);
         double const d_j = VecDouble_get(distances, vertex_id);
-        if (isinf(d_j))
+        if (isinf(d_j)) // uma distância infinita não pode ser relaxada
         {
             break;
         }
-        SpanVertexWeight span = VecSpanVertexWeight_get(
+        SpanVertexWeight neighbors = VecSpanVertexWeight_get(
             &graph->adjacency_list.neighboors, vertex_id);
-        VertexWithWeight *end = span.begin + span.N;
-        if (span.begin)
+        VertexWithWeight *end = neighbors.begin + neighbors.N;
+        for (VertexWithWeight *neighbor_ptr = neighbors.begin; neighbor_ptr < end; neighbor_ptr++)
         {
-            for (VertexWithWeight *neighbor_ptr = span.begin; neighbor_ptr < end; neighbor_ptr++)
+            double const new_distance = d_j + neighbor_ptr->weight;
+            if (new_distance < VecDouble_get(distances, neighbor_ptr->vertex_id))
             {
-                double const new_distance = d_j + neighbor_ptr->weight;
-                if (new_distance < VecDouble_get(distances, neighbor_ptr->vertex_id))
-                {
-                    VecDouble_set(distances, neighbor_ptr->vertex_id, new_distance);
-                    MinHeap_decrease_key(&heap, neighbor_ptr->vertex_id, new_distance);
-                }
+                VecDouble_set(distances, neighbor_ptr->vertex_id, new_distance);
+                MinHeap_decrease_key(&heap, neighbor_ptr->vertex_id, new_distance);
             }
         }
     }

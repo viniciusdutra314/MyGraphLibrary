@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(ShortestPaths C CXX)
+project(ShortestPaths C CXX) # precisa do C++ para linkar com o igraph
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Add option for igraph comparison
 option(COMPARE_WITH_IGRAPH "Compare with igraph library" OFF)
 
 include_directories(src/include)
@@ -29,5 +28,4 @@ if(COMPARE_WITH_IGRAPH)
     target_link_libraries(main_cli ${IGRAPH_LIBRARIES})
     target_include_directories(main_cli PRIVATE ${IGRAPH_INCLUDE_DIRS})
     target_compile_definitions(main_cli PRIVATE COMPARE_WITH_IGRAPH)
-    target_compile_options(main_cli PRIVATE ${IGRAPH_CFLAGS_OTHER})
 endif()

@@ -29,7 +29,6 @@ void __exchange(size_t i, size_t j, MinHeap *heap)
     VecVertexWithPriority_set(&heap->data, i, VecVertexWithPriority_get(&heap->data, j));
     VecVertexWithPriority_set(&heap->data, j, temp);
     
-    // Update index_map when swapping elements
     size_t vertex_i = VecVertexWithPriority_get(&heap->data, i).vertex_id;
     size_t vertex_j = VecVertexWithPriority_get(&heap->data, j).vertex_id;
     VecSizeT_set(&heap->index_map, vertex_i, i);
@@ -37,7 +36,7 @@ void __exchange(size_t i, size_t j, MinHeap *heap)
 }
 
 void __min_heapify(size_t index, MinHeap *heap)
-{
+{ 
     size_t left = __left(index);
     size_t right = __right(index);
     size_t smallest = index;
@@ -77,9 +76,10 @@ void MinHeap_add(MinHeap *heap, size_t vertex_id, double distance)
     VecVertexWithPriority_push_back(&heap->data, element);
     size_t index = VecVertexWithPriority_size(&heap->data) - 1;
     
-    // Ensure index_map is large enough and update it
+    // o map de índices deve ser atualizado para incluir o novo vértice
+    // ele expande conforme necessário com elementos nulos (SIZE_MAX)
     while (VecSizeT_size(&heap->index_map) <= vertex_id) {
-        VecSizeT_push_back(&heap->index_map, SIZE_MAX); // Use SIZE_MAX as invalid index
+        VecSizeT_push_back(&heap->index_map, SIZE_MAX); 
     }
     VecSizeT_set(&heap->index_map, vertex_id, index);
     
@@ -97,13 +97,11 @@ size_t MinHeap_get(MinHeap *heap)
     
     if (last_index > 0) {
         VecVertexWithPriority_set(&heap->data, 0, VecVertexWithPriority_get(&heap->data, last_index));
-        // Update index_map for moved element
         size_t moved_vertex = VecVertexWithPriority_get(&heap->data, 0).vertex_id;
         VecSizeT_set(&heap->index_map, moved_vertex, 0);
     }
     
     VecVertexWithPriority_pop_back(&heap->data);
-    // Mark removed vertex as invalid in index_map
     VecSizeT_set(&heap->index_map, min_element.vertex_id, SIZE_MAX);
     
     if (!MinHeap_is_empty(heap)) {
@@ -114,19 +112,14 @@ size_t MinHeap_get(MinHeap *heap)
 }
 void MinHeap_decrease_key(MinHeap *heap, size_t vertex_id, double new_distance)
 {
-    // Check if heap and index_map are valid
-    if (!heap || !heap->index_map.data) {
-        return; // Invalid heap
-    }
     
-    // Check if vertex_id is valid in index_map
     if (vertex_id >= VecSizeT_size(&heap->index_map)) {
-        return; // Vertex not in heap
+        return; 
     }
     
     size_t index = VecSizeT_get(&heap->index_map, vertex_id);
-    if (index == SIZE_MAX || index >= VecVertexWithPriority_size(&heap->data)) {
-        return; // Vertex not in heap or invalid index
+    if (index == SIZE_MAX) {
+        return; 
     }
     
     VecVertexWithPriority_set(&heap->data, index, (VertexWithPriority){vertex_id, new_distance});

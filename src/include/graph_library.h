@@ -39,7 +39,7 @@ typedef struct
 } Graph;
 
 void Graph_init(Graph* graph);
-int Graph_read_edgelist(Graph *graph, char const *filename);
+int Graph_create_edgelist(Graph *graph, char const *filename);
 int Graph_create_adjacency_list(Graph* graph);
 void Graph_destroy(Graph* graph);
 

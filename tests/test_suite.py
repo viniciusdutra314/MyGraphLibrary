@@ -1,13 +1,9 @@
-import numpy as np
-import igraph as ig  
 from time import time
 from pathlib import Path
 import os
 from concurrent.futures import ProcessPoolExecutor,as_completed
-import pandas as pd
 import subprocess
 from functools import partial 
-import threading
 
 def process_single_graph(graph_file: Path, c_binary_dir: Path):
     print(f"Processing graph file: {graph_file.name}")
@@ -33,19 +29,14 @@ def compare_my_code_with_igraph(c_binary_dir: Path, graph_tests_files: list[Path
     csv_path = "performance_comparison_igraph.csv"
     with open(csv_path, "w") as f:
         f.write("graph_file,igraph_time_s,my_code_time_s,speedup,efficiency\n")
-    with ProcessPoolExecutor(6) as executor:
+    with ProcessPoolExecutor() as executor:
         worker_func = partial(process_single_graph, c_binary_dir=c_binary_dir)
         futures = {executor.submit(worker_func, graph_file): graph_file for graph_file in graph_tests_files}
-        try:
-            for future in as_completed(futures):
-                graph_file = futures[future] 
-                result = future.result() 
-                with open(csv_path, "a") as f:
-                    f.write(f"{result['graph_file']},{result['igraph_time_s']},{result['my_code_time_s']},{result['speedup']},{result['efficiency']}\n")                
-                    f.flush()
-        except Exception as e:
-            print(f"A worker process for {graph_file.name} failed: {e}")
-            raise
+        for future in as_completed(futures):
+            result = future.result() 
+            with open(csv_path, "a") as f:
+                f.write(f"{result['graph_file']},{result['igraph_time_s']},{result['my_code_time_s']},{result['speedup']},{result['efficiency']}\n")                
+                f.flush()
 
 def main():
     c_binary_dir = Path(__file__).parent.parent / "build" / "main_cli"
