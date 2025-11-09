@@ -16,6 +16,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 add_executable(main_cli src/main.c src/graph_library.c src/data_structures.c)
-#if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_options(main_cli PRIVATE -fsanitize=address -fsanitize=undefined)
-#endif()
+endif()

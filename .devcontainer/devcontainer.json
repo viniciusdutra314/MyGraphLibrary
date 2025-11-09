@@ -21,7 +21,8 @@
 		"vscode": {
 			"extensions": [
 				"ms-vscode.cpptools-extension-pack",
-				"ms-vscode.cpptools-themes"
+				"ms-vscode.cpptools-themes",
+				"mechatroner.rainbow-csv"
 			]
 		}
 	}

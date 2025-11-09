@@ -11,7 +11,6 @@
         size_t N;             \
     } name;
 
-
 #define DECLARE_VECTOR_INTERFACE(T, name)                 \
     typedef struct                                        \
     {                                                     \
@@ -25,6 +24,7 @@
     int name##_reserve(name *vector, size_t capacity);    \
     void name##_push_back(name *vector, T element);       \
     void name##_pop_back(name *vector);                   \
+    int name##_resize(name *vector, size_t new_size);     \
     T name##_get(name const *vector, size_t index);       \
     void name##_set(name *vector, size_t index, T value); \
     void name##_free(name *vector);
@@ -48,6 +48,19 @@
         vector->size = 0;                                              \
         vector->data = NULL;                                           \
     }                                                                  \
+    int name##_resize(name *vector, size_t new_size)                   \
+    {                                                                  \
+        if (new_size > vector->capacity)                               \
+        {                                                              \
+            if (name##_reserve(vector, new_size) != 0)                 \
+            {                                                          \
+                return 1;                                              \
+            }                                                          \
+        }                                                              \
+        vector->size = new_size;                                       \
+        return 0;                                                      \
+    }                                                                  \
+                                                                       \
     size_t name##_size(name const *vector)                             \
     {                                                                  \
         return vector->size;                                           \

@@ -18,6 +18,7 @@
         "system_error": "c",
         "functional": "c",
         "tuple": "c",
-        "utility": "c"
+        "utility": "c",
+        "typeinfo": "c"
     }
 }

@@ -207,12 +207,16 @@ int dijkstra(Graph const *graph, size_t source, VecDouble *distances)
         fprintf(stderr, "O vértice fonte é inválido\n");
         return 1;
     }
-    VecDouble_init(distances);
-    if (VecDouble_reserve(distances, V) != 0)
+
+    if (distances->capacity != graph->V)
     {
-        fprintf(stderr, "Alocação do vetor de distâncias falhou");
-        return 1;
-    };
+        if (VecDouble_reserve(distances, V) != 0)
+        {
+            fprintf(stderr, "Alocação do vetor de distâncias falhou");
+            return 1;
+        };
+    }
+    VecDouble_resize(distances, 0);
     MinHeap heap;
     MinHeap_init(&heap);
     for (size_t i = 0; i < V; i++)
@@ -224,10 +228,14 @@ int dijkstra(Graph const *graph, size_t source, VecDouble *distances)
     while (!MinHeap_is_empty(&heap))
     {
         size_t vertex_id = MinHeap_get(&heap);
-        size_t const d_j = VecDouble_get(distances, vertex_id);
+        double const d_j = VecDouble_get(distances, vertex_id);
+        if (isinf(d_j))
+        {
+            break;
+        }
         SpanVertexWeight span = VecSpanVertexWeight_get(
             &graph->adjacency_list.neighboors, vertex_id);
-        VertexWithWeight* end=span.begin+span.N;
+        VertexWithWeight *end = span.begin + span.N;
         if (span.begin)
         {
             for (VertexWithWeight *neighbor_ptr = span.begin; neighbor_ptr < end; neighbor_ptr++)

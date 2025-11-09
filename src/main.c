@@ -19,23 +19,24 @@ int main(int argc,char** argv){
     struct timespec start_time;
     timespec_get(&start_time,TIME_UTC);
     double efficiency=0;
+    VecDouble distances;
+    VecDouble_init(&distances); 
     for (size_t source=0;source<graph.V;source++){   
-        VecDouble distances;
-        VecDouble_init(&distances); 
         if (dijkstra(&graph,source,&distances) != 0) {
             fprintf(stderr, "Erro na execuação do algoritmo de Dijkstra \n");
             return 1;
         }
-        
-        for (size_t i=0;i<graph.V;i++){
-            double distance=VecDouble_get(&distances,i);
-            if (distance!=0){
-                efficiency+=1.0/(distance);
+        for (size_t target=0;target<graph.V;target++){
+            if (source!=target){
+                double d=VecDouble_get(&distances,target);
+                if (!isinf(d)){
+                    efficiency+=1.0/d;
+                }
             }
         }
-
-        VecDouble_free(&distances);
     }
+    VecDouble_free(&distances);
+
     efficiency/=(graph.V*(graph.V-1));
     printf("Efficiency: %.8f \n",efficiency);
     struct timespec end_time;
