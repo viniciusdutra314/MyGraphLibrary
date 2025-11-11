@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(ShortestPaths C CXX) # precisa do C++ para linkar com o igraph
+project(ShortestPaths C CXX) 
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 find_package(OpenMP REQUIRED)
 
 option(COMPARE_WITH_IGRAPH "Compare with igraph library" OFF)
-
+option(COMPARE_WITH_C11_THREADS "Compare OpenMP with C11 Threads" OFF)
 include_directories(src/include)
 
 add_compile_options(-Wall -Wextra -pedantic -Wpedantic -Werror)
@@ -34,4 +34,7 @@ if(COMPARE_WITH_IGRAPH)
     target_link_libraries(main_cli PRIVATE ${IGRAPH_LIBRARIES})
     target_include_directories(main_cli PRIVATE ${IGRAPH_INCLUDE_DIRS})
     target_compile_definitions(main_cli PRIVATE COMPARE_WITH_IGRAPH)
+endif()
+if(COMPARE_WITH_C11_THREADS)
+    target_compile_definitions(main_cli PRIVATE COMPARE_WITH_C11_THREADS)
 endif()
