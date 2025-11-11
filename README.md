@@ -13,6 +13,6 @@
 │   └── main.c                # Ponto de entrada principal da aplicação CLI
 └── tests/
     ├── test_suite.py         # Suíte de testes em Python
-    └── graphs_for_floyd_warshall/ # Grafos de teste
+    └── graphs_for_dijkstra/ # Grafos de teste
         └── ...
 ```

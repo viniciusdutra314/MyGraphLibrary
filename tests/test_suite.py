@@ -1,13 +1,9 @@
-from time import time
 from pathlib import Path
 import os
-from concurrent.futures import ProcessPoolExecutor,as_completed
 import subprocess
 from functools import partial 
 
 def process_single_graph(graph_file: Path, c_binary_dir: Path):
-    print(f"Processing graph file: {graph_file.name}")
-    subprocess.run([c_binary_dir, str(graph_file)], stdout=subprocess.DEVNULL)
     result = subprocess.run([c_binary_dir, str(graph_file)], capture_output=True, text=True)
     output_lines = result.stdout.strip().split('\n')
         
@@ -17,7 +13,7 @@ def process_single_graph(graph_file: Path, c_binary_dir: Path):
         
     speedup = igraph_time / my_code_time 
     return {
-        'graph_file': graph_file.name,
+        'graph_file': str(graph_file),
         'igraph_time_s': igraph_time,
         'my_code_time_s': my_code_time,
         'speedup': speedup,
@@ -25,18 +21,6 @@ def process_single_graph(graph_file: Path, c_binary_dir: Path):
     }
 
 
-def compare_my_code_with_igraph(c_binary_dir: Path, graph_tests_files: list[Path]):
-    csv_path = "performance_comparison_igraph.csv"
-    with open(csv_path, "w") as f:
-        f.write("graph_file,igraph_time_s,my_code_time_s,speedup,efficiency\n")
-    with ProcessPoolExecutor() as executor:
-        worker_func = partial(process_single_graph, c_binary_dir=c_binary_dir)
-        futures = {executor.submit(worker_func, graph_file): graph_file for graph_file in graph_tests_files}
-        for future in as_completed(futures):
-            result = future.result() 
-            with open(csv_path, "a") as f:
-                f.write(f"{result['graph_file']},{result['igraph_time_s']},{result['my_code_time_s']},{result['speedup']},{result['efficiency']}\n")                
-                f.flush()
 
 def main():
     c_binary_dir = Path(__file__).parent.parent / "build" / "main_cli"
@@ -44,8 +28,19 @@ def main():
         c_binary_dir = Path(input("C binary not found. Please provide the path to the compiled C binary: "))
         
     graph_tests_dir = Path(__file__).parent / "graphs_for_dijkstra"
-    graph_tests_files = [f for f in graph_tests_dir.iterdir() if f.name.endswith('0.net')]
-    compare_my_code_with_igraph(c_binary_dir, graph_tests_files)    
+    graph_tests_files = list(map(lambda x: graph_tests_dir / x, ["A_10000_2_0.net"]))
+    csv_path = "parallel_implementation.csv"
+    with open(csv_path, "w") as f:
+        f.write("graph_file,repetition,cpu_cores,schedule,igraph_time_s,my_code_time_s,speedup,efficiency\n")
+        for i in range(10):
+            for graph_file in graph_tests_files:
+                for num_cores in range(1, os.cpu_count() + 1):
+                    for schedule in ["static","dynamic","guided"]:
+                        os.environ['OMP_SCHEDULE']=str(schedule)
+                        os.environ['OMP_NUM_THREADS'] = str(num_cores)
+                        result=process_single_graph(graph_file, c_binary_dir)
+                        f.write(f"{result['graph_file']},{i},{num_cores},OMP_{schedule},{result['igraph_time_s']},{result['my_code_time_s']},{result['speedup']},{result['efficiency']}\n")                
+                        f.flush()
 
 if __name__ == "__main__":
     main()
