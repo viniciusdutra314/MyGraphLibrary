@@ -12,7 +12,6 @@
     #include <igraph.h>
 #endif
 
-
 #ifdef COMPARE_WITH_C11_THREADS
     typedef struct
     {

@@ -29,7 +29,7 @@ def main():
         c_binary_dir = Path(input("C binary not found. Please provide the path to the compiled C binary: "))
         
     graph_tests_dir = Path(__file__).parent / "graphs_for_dijkstra"
-    graph_tests_files = list(map(lambda x: graph_tests_dir / x, ["A_25000_2_0.net"]))
+    graph_tests_files = list(map(lambda x: graph_tests_dir / x, ["A_50000_2_0.net"]))
     csv_path = "parallel_implementation.csv"
     with open(csv_path, "w") as f:
         f.write("graph_file,repetition,cpu_cores,schedule,igraph_time_s,my_code_time_s,c11_threads_time_s,efficiency\n")
