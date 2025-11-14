@@ -14,7 +14,7 @@ include_directories(src/include)
 add_compile_options(-Wall -Wextra -pedantic -Wpedantic -Werror)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options(-g -fsanitize=undefined -fno-omit-frame-pointer)
+    add_compile_options(-g -fsanitize=thread -fno-omit-frame-pointer)
 endif()
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-O3 -march=native)
@@ -25,7 +25,7 @@ add_executable(main_cli src/main.c src/graph_library.c src/data_structures.c)
 target_link_libraries(main_cli PRIVATE OpenMP::OpenMP_C)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_link_options(main_cli PRIVATE -fsanitize=address -fsanitize=undefined)
+    target_link_options(main_cli PRIVATE -fsanitize=thread)
 endif()
 
 if(COMPARE_WITH_IGRAPH)

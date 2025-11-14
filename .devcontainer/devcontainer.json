@@ -8,12 +8,15 @@
 		"ghcr.io/devcontainers-extra/features/apt-packages:1": {
 			"clean_ppas": true,
 			"preserve_apt_list": true,
-			"packages": "btop,htop,valgrind,cloc,libigraph-dev",
+			"packages": "btop,htop,valgrind,cloc,libigraph-dev,openmpi-bin,openmpi-common,libopenmpi-dev",
 			"ppas": "ppa:deadsnakes/ppa"
 		},
 		"ghcr.io/devcontainers-extra/features/cmake:1": {
 			"version": "3.31.4"
 		},
+		"ghcr.io/devcontainers/features/sshd:1": {
+        	"version": "latest"
+	    },
 		"ghcr.io/va-h/devcontainers-features/uv:1": {},
 		"ghcr.io/devcontainers/features/python:1": {}
 	},

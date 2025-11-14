@@ -6,12 +6,13 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/main_cli",
-            "args": ["test1.net"],
+            "args": ["/workspaces/ShortestsPaths/tests/graphs_for_dijkstra/A_2500_2_2.net"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [{"C11_THREADS_NUM_THREADS": "4"}],
             "externalConsole": false,
             "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

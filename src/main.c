@@ -9,32 +9,44 @@
 #include <omp.h>
 
 #ifdef COMPARE_WITH_IGRAPH
-    #include <igraph.h>
+#include <igraph.h>
 #endif
 
 #ifdef COMPARE_WITH_C11_THREADS
-    typedef struct
-    {
-        Graph const *graph;
-        double *global_efficiency;
-        mtx_t *efficiency_mutex;
-        atomic_size_t *next_source_vertex;
-    } ThreadArgs;
+typedef struct
+{
+    Graph const *graph;
+    double *global_efficiency;
+    mtx_t *efficiency_mutex;
+    atomic_size_t *next_source_vertex;
+} ThreadArgs;
 
-    int worker_dijkstra(void *arg)
+int worker_dijkstra(void *arg)
+{
+    ThreadArgs args = *(ThreadArgs *)(arg);
+    VecDouble distances;
+    VecDouble_init(&distances);
+    const size_t V = args.graph->V;
+    double local_efficiency = 0.0;
+    char *chunk_size_str = getenv("C11_THREADS_CHUNK_SIZE");
+    long chunk_size = 1;
+    if (chunk_size_str != NULL)
     {
-        ThreadArgs args = *(ThreadArgs *)(arg);
-        VecDouble distances;
-        VecDouble_init(&distances);
-        const size_t V = args.graph->V;
-        double local_efficiency = 0.0;
-        while (1)
+        char *endptr;
+        chunk_size = strtol(chunk_size_str, &endptr, 10);
+    };
+
+    while (1)
+    {
+        size_t chunk_start = atomic_fetch_add(args.next_source_vertex, chunk_size);
+        if (chunk_start >= V)
         {
-            size_t source = atomic_fetch_add(args.next_source_vertex, 1);
-            if (source >= V)
-            {
-                break;
-            }
+            break;
+        };
+        size_t chunk_end = (chunk_start + chunk_size) < V ? chunk_start + chunk_size : V;
+
+        for (size_t source = chunk_start; source < chunk_end; source++)
+        {
             dijkstra(args.graph, source, &distances);
             for (size_t target = 0; target < V; target++)
             {
@@ -48,13 +60,13 @@
                 }
             }
         }
-        VecDouble_free(&distances);
-        mtx_lock(args.efficiency_mutex);
-        *args.global_efficiency += local_efficiency;
-        mtx_unlock(args.efficiency_mutex);
-        return thrd_success;
     }
-#endif
+    VecDouble_free(&distances);
+    mtx_lock(args.efficiency_mutex);
+    *args.global_efficiency += local_efficiency;
+    mtx_unlock(args.efficiency_mutex);
+    return thrd_success;
+}
 
 int main(int argc, char **argv)
 {
@@ -74,12 +86,11 @@ int main(int argc, char **argv)
     struct timespec start_time;
     timespec_get(&start_time, TIME_UTC);
     double efficiency = 0;
-
-#pragma omp parallel reduction(+ : efficiency) default(none) shared(graph)
+    #pragma omp parallel reduction(+ : efficiency) default(none) shared(graph)
     {
         VecDouble distances;
         VecDouble_init(&distances);
-#pragma omp for schedule(runtime)
+    #pragma omp for schedule(runtime)
         for (size_t source = 0; source < graph.V; source++)
         {
             dijkstra(&graph, source, &distances);
@@ -103,84 +114,84 @@ int main(int argc, char **argv)
     struct timespec end_time;
     timespec_get(&end_time, TIME_UTC);
     printf("MyCode(time): %.8f s \n", (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_nsec - start_time.tv_nsec) / 1e9);
-    #ifdef COMPARE_WITH_C11_THREADS
-        char *num_threads_str = getenv("OMP_NUM_THREADS");
-        long num_threads=1;
-        if (num_threads_str == NULL) {
-            num_threads = omp_get_num_threads();
-        } else{
-            char *strtol_end;
-            num_threads = strtol(num_threads_str, &strtol_end, 10);
-        }
+#ifdef COMPARE_WITH_C11_THREADS
+    char *num_threads_str = getenv("C11_THREADS_NUM_THREADS");
+    if (num_threads_str == NULL) {
+        fprintf(stderr," Erro: variável de ambiente C11_THREADS_NUM_THREADS não definida \n");
+        return 1;
+    } 
+    char *strtol_end;
+    long num_threads = strtol(num_threads_str, &strtol_end, 10);
+    
+    thrd_t *vec_of_threads = (thrd_t *)malloc(sizeof(thrd_t) * num_threads);
+    double efficiency_c11 = 0.0;
+    mtx_t efficiency_mutex;
+    mtx_init(&efficiency_mutex, mtx_plain);
+    atomic_size_t next_source_vertex = 0;
+    ThreadArgs args = {.graph = &graph,
+                       .global_efficiency = &efficiency_c11,
+                       .next_source_vertex = &next_source_vertex,
+                       .efficiency_mutex = &efficiency_mutex};
+    struct timespec c11_start_time;
+    timespec_get(&c11_start_time, TIME_UTC);
+    for (size_t i = 0; i < (size_t)num_threads; i++)
+    {
+        thrd_create(&vec_of_threads[i], worker_dijkstra, &args);
+    };
+    for (size_t i = 0; i < (size_t)num_threads; i++)
+    {
+        thrd_join(vec_of_threads[i], NULL);
+    }
+    efficiency_c11 /= (graph.V * (graph.V - 1));
+    struct timespec c11_end_time;
+    timespec_get(&c11_end_time, TIME_UTC);
 
-        thrd_t *vec_of_threads = (thrd_t *)malloc(sizeof(thrd_t) * num_threads);
-        double efficiency_c11=0.0;
-        mtx_t efficiency_mutex;
-        mtx_init(&efficiency_mutex,mtx_plain);
-        atomic_size_t next_source_vertex = 0;
-        ThreadArgs args = {.graph = &graph,
-                        .global_efficiency = &efficiency_c11,
-                        .next_source_vertex = &next_source_vertex,
-                            .efficiency_mutex=&efficiency_mutex };
-        struct timespec c11_start_time;
-        timespec_get(&c11_start_time, TIME_UTC);
-        for (size_t i = 0; i < (size_t)num_threads; i++)
-        {
-            thrd_create(&vec_of_threads[i], worker_dijkstra,&args);
-        };
-        for (size_t i = 0; i < (size_t)num_threads; i++)
-        {
-            thrd_join(vec_of_threads[i], NULL);
-        }
-        efficiency_c11 /= (graph.V * (graph.V - 1));
-        struct timespec c11_end_time;
-        timespec_get(&c11_end_time, TIME_UTC);
+    printf("C11 Threads(time): %.8f s \n", (c11_end_time.tv_sec - c11_start_time.tv_sec) + (c11_end_time.tv_nsec - c11_start_time.tv_nsec) / 1e9);
+    if (fabs(efficiency - efficiency_c11) / efficiency > 1e-6)
+    {
+        fprintf(stderr, "OpenMP efficiency (%.8f) differs from C11 threads efficiency (%.8f)\n", efficiency, efficiency_c11);
+        return 1;
+    }
+    mtx_destroy(&efficiency_mutex);
+    free(vec_of_threads);
+#endif
+#ifdef COMPARE_WITH_IGRAPH
+    igraph_t ig_graph;
+    igraph_vector_int_t edges;
+    igraph_vector_t weights;
+    igraph_vector_int_init(&edges, graph.E * 2);
+    igraph_vector_init(&weights, graph.E);
+    for (size_t i = 0; i < graph.E; i++)
+    {
+        Edge edge = VecEdge_get(&graph.edge_list, i);
+        VECTOR(edges)
+        [i * 2] = edge.from;
+        VECTOR(edges)
+        [i * 2 + 1] = edge.to;
+        VECTOR(weights)
+        [i] = edge.weight;
+    }
 
-        printf("C11 Threads(time): %.8f s \n", (c11_end_time.tv_sec - c11_start_time.tv_sec) + (c11_end_time.tv_nsec - c11_start_time.tv_nsec) / 1e9);
-        if (fabs(efficiency - efficiency_c11)/efficiency > 1e-6) {
-            fprintf(stderr,"OpenMP efficiency (%.8f) differs from C11 threads efficiency (%.8f)\n", efficiency, efficiency_c11);
-            return 1;
-        }
-        mtx_destroy(&efficiency_mutex);
-        free(vec_of_threads);
-    #endif
-    #ifdef COMPARE_WITH_IGRAPH
-        igraph_t ig_graph;
-        igraph_vector_int_t edges;
-        igraph_vector_t weights;
-        igraph_vector_int_init(&edges, graph.E * 2);
-        igraph_vector_init(&weights, graph.E);
-        for (size_t i = 0; i < graph.E; i++)
-        {
-            Edge edge = VecEdge_get(&graph.edge_list, i);
-            VECTOR(edges)
-            [i * 2] = edge.from;
-            VECTOR(edges)
-            [i * 2 + 1] = edge.to;
-            VECTOR(weights)
-            [i] = edge.weight;
-        }
+    igraph_create(&ig_graph, &edges, graph.V, IGRAPH_DIRECTED);
+    struct timespec ig_start_time;
+    timespec_get(&ig_start_time, TIME_UTC);
+    igraph_real_t ig_efficiency;
+    igraph_global_efficiency(&ig_graph, &ig_efficiency, &weights, IGRAPH_DIRECTED);
+    struct timespec ig_end_time;
+    timespec_get(&ig_end_time, TIME_UTC);
 
-        igraph_create(&ig_graph, &edges, graph.V, IGRAPH_DIRECTED);
-        struct timespec ig_start_time;
-        timespec_get(&ig_start_time, TIME_UTC);
-        igraph_real_t ig_efficiency;
-        igraph_global_efficiency(&ig_graph, &ig_efficiency, &weights, IGRAPH_DIRECTED);
-        struct timespec ig_end_time;
-        timespec_get(&ig_end_time, TIME_UTC);
+    if ((fabs(ig_efficiency - efficiency) / ig_efficiency) > 1e-6)
+    {
+        fprintf(stderr, "Erro: A eficiência calculada pelo igraph (%.8f) difere da eficiência calculada pelo meu código (%.8f)\n", ig_efficiency, efficiency);
+        return 1;
+    }
 
-        if ((fabs(ig_efficiency - efficiency) / ig_efficiency) > 1e-6)
-        {
-            fprintf(stderr, "Erro: A eficiência calculada pelo igraph (%.8f) difere da eficiência calculada pelo meu código (%.8f)\n", ig_efficiency, efficiency);
-            return 1;
-        }
+    printf("Igraph(time): %.8f s  \n", (ig_end_time.tv_sec - ig_start_time.tv_sec) + (ig_end_time.tv_nsec - ig_start_time.tv_nsec) / 1e9);
 
-        printf("Igraph(time): %.8f s  \n", (ig_end_time.tv_sec - ig_start_time.tv_sec) + (ig_end_time.tv_nsec - ig_start_time.tv_nsec) / 1e9);
-
-        igraph_vector_int_destroy(&edges);
-        igraph_vector_destroy(&weights);
-        igraph_destroy(&ig_graph);
-    #endif
+    igraph_vector_int_destroy(&edges);
+    igraph_vector_destroy(&weights);
+    igraph_destroy(&ig_graph);
+#endif
     Graph_destroy(&graph);
     char *output_file_name = malloc(strlen(argv[1]) + strlen(".eff") + 1);
     strcpy(output_file_name, argv[1]);
