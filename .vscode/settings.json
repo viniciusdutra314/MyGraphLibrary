@@ -19,6 +19,7 @@
         "functional": "c",
         "tuple": "c",
         "utility": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "omp.h": "c"
     }
 }

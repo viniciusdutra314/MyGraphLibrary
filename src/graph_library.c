@@ -176,16 +176,11 @@ int floyd_warshall(Graph const *graph, MatrixDouble *distances)
     {
         for (size_t i = 0; i < V; i++)
         {
-            double const d_ik = MatrixDouble_get(distances, i, k);
             for (size_t j = 0; j < V; j++)
             {
-                double const d_kj = MatrixDouble_get(distances, k, j);
-                double const d_ij = MatrixDouble_get(distances, i, j);
-                double const new_distance = d_ik + d_kj;
-                if (new_distance > d_ij)
-                {
-                    MatrixDouble_set(distances, i, j, new_distance);
-                }
+                MatrixDouble_set(distances, i, j,
+                                 fmin(MatrixDouble_get(distances, i, j),
+                                     MatrixDouble_get(distances, i, k) + MatrixDouble_get(distances, k, j)));
             }
         }
     }
