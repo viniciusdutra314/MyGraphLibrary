@@ -20,6 +20,7 @@
         "tuple": "c",
         "utility": "c",
         "typeinfo": "c",
-        "omp.h": "c"
+        "omp.h": "c",
+        "text_encoding": "c"
     }
 }

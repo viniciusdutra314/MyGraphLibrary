@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <mpi.h>
 #include "graph_library.h"
 
 #include "data_structures.h"
@@ -11,7 +12,7 @@ IMPLEMENT_VECTOR_INTERFACE(Edge, VecEdge)
 IMPLEMENT_VECTOR_INTERFACE(VertexWithWeight, VecVertexWeight)
 IMPLEMENT_VECTOR_INTERFACE(double, VecDouble)
 IMPLEMENT_VECTOR_INTERFACE(SpanVertexWeight, VecSpanVertexWeight)
-IMPLEMENT_SQUARE_MATRIX_INTERFACE(double, MatrixDouble)
+IMPLEMENT_MATRIX_INTERFACE(double, MatrixDouble)
 
 void AdjList_init(AdjList *adjlist)
 {
@@ -153,7 +154,7 @@ int floyd_warshall(Graph const *graph, MatrixDouble *distances)
 {
     size_t const V = graph->V;
     size_t const E = graph->E;
-    if (MatrixDouble_init(distances, V) != 0)
+    if (MatrixDouble_init(distances, V,V) != 0)
     {
         fprintf(stderr, "Alocação da matriz de distância falhou");
         goto clean_up;
@@ -188,6 +189,151 @@ int floyd_warshall(Graph const *graph, MatrixDouble *distances)
 clean_up:
     MatrixDouble_free(distances);
     return 1;
+}
+
+
+int floyd_warshall_openmpi(Graph const *graph, MatrixDouble *distances)
+{
+    int rank, nprocs;
+    int result = 1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+    size_t const V = graph->V;
+    size_t const E = graph->E;
+
+    size_t rows_per_proc = V / nprocs;
+    size_t start_row = rank * rows_per_proc;
+    size_t num_rows = (rank != nprocs - 1) ? rows_per_proc : V - start_row;
+    
+    MatrixDouble local_distances;
+    MatrixDouble_init(&local_distances, 0, 0);  
+    
+    VecDouble k_row;
+    VecDouble_init(&k_row);
+    
+    if (MatrixDouble_init(&local_distances, num_rows, V) != 0)
+    {
+        fprintf(stderr, "Falha na alocação da matriz local no processo %d\n", rank);
+        goto cleanup;
+    }
+
+    for (size_t i = 0; i < num_rows; i++)
+    {
+        for (size_t j = 0; j < V; j++)
+        {
+            size_t global_i = start_row + i;
+            MatrixDouble_set(&local_distances, i, j, (global_i != j) ? INFINITY : 0.0);
+        }
+    }
+
+    for (size_t edge_index = 0; edge_index < E; edge_index++)
+    {
+        Edge const edge = VecEdge_get(&graph->edge_list, edge_index);
+        if (edge.from >= start_row && edge.from < start_row + num_rows)
+        {
+            size_t local_i = edge.from - start_row;
+            MatrixDouble_set(&local_distances, local_i, edge.to, edge.weight);
+        }
+    }
+
+    if (VecDouble_reserve(&k_row, V) != 0)
+    {
+        fprintf(stderr, "Falha na alocação de buffer para comunicação MPI no processo %d\n", rank);
+        goto cleanup;
+    }
+    VecDouble_resize(&k_row, V);
+
+    for (size_t k = 0; k < V; k++)
+    {
+        int owner = k / rows_per_proc;
+        if (owner >= nprocs) {
+            owner = nprocs - 1;  
+        }
+
+        if (rank == owner)
+        {
+            size_t local_k = k - start_row;
+            for (size_t j = 0; j < V; j++)
+            {
+                VecDouble_set(&k_row, j, MatrixDouble_get(&local_distances, local_k, j));
+            }
+        }
+
+        MPI_Bcast(k_row.data, V, MPI_DOUBLE, owner, MPI_COMM_WORLD);
+
+        for (size_t i = 0; i < num_rows; i++)
+        {
+            for (size_t j = 0; j < V; j++)
+            {
+                double current_dist = MatrixDouble_get(&local_distances, i, j);
+                double new_dist = MatrixDouble_get(&local_distances, i, k) + VecDouble_get(&k_row, j);
+                if (new_dist < current_dist)
+                {
+                    MatrixDouble_set(&local_distances, i, j, new_dist);
+                }
+            }
+        }
+    }
+
+    if (rank == 0)
+    {
+        if (MatrixDouble_init(distances, V, V) != 0)
+        {
+            fprintf(stderr, "Falha na alocação da matriz de distância completa");
+            goto cleanup;
+        }
+
+        for (size_t i = 0; i < num_rows; i++)
+        {
+            for (size_t j = 0; j < V; j++)
+            {
+                MatrixDouble_set(distances, start_row + i, j, MatrixDouble_get(&local_distances, i, j));
+            }
+        }
+
+        for (int p = 1; p < nprocs; p++)
+        {
+            size_t p_start_row = p * rows_per_proc;
+            size_t p_local_rows;
+            
+            if (p == nprocs - 1) {
+                p_local_rows = V - p_start_row;
+            } else {
+                p_local_rows = rows_per_proc;
+            }
+
+            MatrixDouble recv_buffer;
+            if (MatrixDouble_init(&recv_buffer, p_local_rows, V) != 0)
+            {
+                fprintf(stderr, "Falha na alocação do buffer de recepção");
+                MatrixDouble_free(distances);
+                goto cleanup;
+            }
+
+            MPI_Recv(recv_buffer.data, p_local_rows * V, MPI_DOUBLE, p, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+            for (size_t i = 0; i < p_local_rows; i++)
+            {
+                for (size_t j = 0; j < V; j++)
+                {
+                    MatrixDouble_set(distances, p_start_row + i, j, MatrixDouble_get(&recv_buffer, i, j));
+                }
+            }
+            MatrixDouble_free(&recv_buffer);
+        }
+    }
+    else
+    {
+        MPI_Send(local_distances.data, num_rows * V, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    }
+
+    result = 0;  
+
+cleanup:
+    MatrixDouble_free(&local_distances);
+    VecDouble_free(&k_row);
+    return result;
 }
 
 int dijkstra(Graph const *graph, size_t source, VecDouble *distances)

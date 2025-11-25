@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(ShortestPaths C CXX) 
+project(ShortestPaths C CXX) #usamos C++ para compilar o igraph
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)

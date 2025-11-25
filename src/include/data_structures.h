@@ -29,13 +29,14 @@
     void name##_set(name *vector, size_t index, T value); \
     void name##_free(name *vector);
 
-#define DECLARE_SQUARE_MATRIX_INTERFACE(T, name)                    \
+#define DECLARE_MATRIX_INTERFACE(T, name)                           \
     typedef struct                                                  \
     {                                                               \
-        size_t size;                                                \
+        size_t nrows;                                               \
+        size_t ncols;                                               \
         T *data;                                                    \
     } name;                                                         \
-    int name##_init(name *matrix, size_t size);                     \
+    int name##_init(name *matrix, size_t nrows, size_t ncols);      \
     T name##_get(name const *matrix, size_t row, size_t col);       \
     void name##_set(name *matrix, size_t row, size_t col, T value); \
     void name##_free(name *matrix);
@@ -127,32 +128,41 @@
         vector->size = 0;                                              \
     }
 
-#define IMPLEMENT_SQUARE_MATRIX_INTERFACE(T, name)                           \
-    int name##_init(name *matrix, size_t size)                               \
+#define IMPLEMENT_MATRIX_INTERFACE(T, name)                                  \
+    int name##_init(name *matrix, size_t nrows, size_t ncols)                \
     {                                                                        \
-        matrix->size = size;                                                 \
-        matrix->data = (T *)malloc(size * size * sizeof(T));                 \
+        matrix->nrows = nrows;                                               \
+        matrix->ncols = ncols;                                               \
+        size_t num_elements = nrows * ncols;                                 \
+        if (num_elements == 0)                                               \
+        {                                                                    \
+            matrix->data = NULL;                                             \
+            return 0;                                                        \
+        }                                                                    \
+        matrix->data = (T *)malloc(nrows * ncols * sizeof(T));               \
         if (matrix->data == NULL)                                            \
         {                                                                    \
             fprintf(stderr, "Falha na alocação de memória para a matriz\n"); \
-            matrix->size = 0;                                                \
+            matrix->nrows = 0;                                               \
+            matrix->ncols = 0;                                               \
             return 1;                                                        \
         }                                                                    \
         return 0;                                                            \
     }                                                                        \
     T name##_get(name const *matrix, size_t row, size_t col)                 \
     {                                                                        \
-        return matrix->data[row * matrix->size + col];                       \
+        return matrix->data[row * matrix->ncols + col];                      \
     }                                                                        \
     void name##_set(name *matrix, size_t row, size_t col, T value)           \
     {                                                                        \
-        matrix->data[row * matrix->size + col] = value;                      \
+        matrix->data[row * matrix->ncols + col] = value;                     \
     }                                                                        \
     void name##_free(name *matrix)                                           \
     {                                                                        \
         free(matrix->data);                                                  \
         matrix->data = NULL;                                                 \
-        matrix->size = 0;                                                    \
+        matrix->ncols = 0;                                                   \
+        matrix->nrows = 0;                                                   \
     }
 
 typedef struct
